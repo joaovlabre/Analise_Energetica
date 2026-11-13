@@ -1,0 +1,17 @@
+grandeza,descricao,funcao,endereco,base,tipo,word_order,escala,unidade,grupo,verificado,obs
+tensao_an,Tensao A-N,03,1,1,FLOAT32,ABCD,1,V,instantaneo,nao,MAPA DE TESTE para o Elipse Modbus Simulator (nao e medidor real). 220 V = regs 17244 / 0
+tensao_bn,Tensao B-N,03,3,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_cn,Tensao C-N,03,5,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_ab,Tensao A-B,03,7,1,FLOAT32,ABCD,1,V,instantaneo,nao,380 V = regs 17342 / 0
+tensao_bc,Tensao B-C,03,9,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_ca,Tensao C-A,03,11,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+corrente_a,Corrente fase A,03,13,1,FLOAT32,ABCD,1,A,instantaneo,nao,10 A = regs 16672 / 0
+corrente_b,Corrente fase B,03,15,1,FLOAT32,ABCD,1,A,instantaneo,nao,
+corrente_c,Corrente fase C,03,17,1,FLOAT32,ABCD,1,A,instantaneo,nao,
+potencia_ativa_total,Potencia ativa total,03,19,1,FLOAT32,ABCD,1,kW,instantaneo,nao,3 x 220 V x 10 A x FP 1 = 6.6 kW = regs 16595 / 13107
+fp_total,Fator de potencia total,03,21,1,FLOAT32,ABCD,1,,instantaneo,nao,1.0 = regs 16256 / 0
+frequencia,Frequencia,03,23,1,FLOAT32,ABCD,1,Hz,instantaneo,nao,60 Hz = regs 17008 / 0
+energia_ativa_importada,Energia ativa consumida (totalizador),03,25,1,UINT32,ABCD,0.1,kWh,energia,nao,Unidade de 0.1 kWh: reg 25 = parte alta (0) e reg 26 = parte baixa. 1000.0 kWh = 0 / 10000
+tensao_fn_media,Tensao F-N media,03,27,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_ff_media,Tensao F-F media,03,29,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+corrente_media,Corrente media,03,31,1,FLOAT32,ABCD,1,A,instantaneo,nao,
