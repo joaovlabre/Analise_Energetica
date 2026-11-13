@@ -58,6 +58,8 @@ Usuários: engenharia elétrica/manutenção (técnico), utilidades/caldeira, pr
 | MMW02 | WEG | RS-485 Modbus RTU | `config/mapas/weg_mmw02.csv` | Input registers (FC 04), base 0. Configurar o parâmetro "Formato" como **Short (16 bits)** ou adaptar o coletor (o padrão de fábrica é Long). Byte/word swap configuráveis, padrão "nenhum". Tabela de energia de 64 bits sem unidade no manual público: validar em campo. Tabela completa: pedir ao suporte WEG. |
 | GoLogic EM3261 (GLEM3261) | Schneider | RS-485 Modbus RTU **[A CONFIRMAR]** | `config/mapas/schneider_gologic_em3261.csv` | Holding registers (FC 03). Lista da Schneider em numeração base 1: endereço no protocolo = registrador − 1. Big-endian (ABCD). **Não tem demanda nem THD**: a demanda é calculada pelo sistema a partir da energia. Usar o acumulador **permanente** (3304), que não é zerado pelo IHM. |
 
+Conexão: fase inicial com **1 multimedidor ligado direto num conversor USB-RS485** (barramento `serial`). Depois os dados de campo chegam ao servidor por **Ethernet** (gateway Modbus TCP: barramento `tcp`, ou `rtu_over_tcp` se o gateway só repassar o quadro RTU). Trocar de um para o outro é só configuração.
+
 Futuros: medidores de gás e vapor, relés de proteção, CLPs (dado de produção e pulsos), balanças/totalizadores.
 
 ### Formato padrão do mapa de registradores (CSV)
@@ -96,10 +98,11 @@ Módulos:
 - Linguagem: Python 3.12+
 - Modbus: `pymodbus` (RTU e TCP, assíncrono)
 - Propriedades do vapor: `iapws`
-- Banco: **[A DEFINIR]** PostgreSQL + TimescaleDB, InfluxDB ou SQLite (protótipo)
-- API: **[A DEFINIR]** FastAPI
-- Interface: **[A DEFINIR]** frontend próprio ou Grafana na fase inicial
-- Relatórios: **[A DEFINIR]** PDF e Excel (openpyxl)
+- Banco: **SQLite** no protótipo (`dados/*.db`), migração prevista para **MS SQL Server**. Acesso só via SQLAlchemy 2 Core (`armazenamento/esquema.py`), sem SQL ou tipos exclusivos do SQLite. Datas em UTC ingênuo.
+- API: **FastAPI** (`api/app.py`)
+- Interface: **web própria** (Jinja2 + JS puro + Chart.js local em `web/static`, sem CDN: a planta pode ficar sem internet)
+- Relatórios: **[A DEFINIR]** PDF; Excel com openpyxl (já usado na validação de campo)
+- Simulador: servidor Modbus próprio em asyncio (`tests/simulador/servidor.py`), não o servidor do pymodbus (API em transição para a v4)
 - Testes: `pytest` + simulador Modbus (`pymodbus` server) com dados sintéticos
 
 ## 7. Estrutura de pastas
@@ -133,7 +136,7 @@ Padrão: `<grandeza>[_<fase ou qualificador>]`, sem unidade no nome (a unidade f
 - Unidades canônicas: V, A, kW, kvar, kVA, kWh, kvarh, Hz, %, m³, Nm³, kg, t, bar(g), °C
 
 ### Coleta
-- Taxas de coleta sugeridas: instantâneos 1–5 s (só tela), totalizadores 1 min, qualidade 1–5 min. **[A DEFINIR]**
+- Taxas de coleta (configuráveis em `coleta.taxas`): instantâneos lidos a cada 2 s (tela, tabela `valor_atual`) e gravados no histórico 1×/min; totalizadores, demanda e qualidade 1 min; status 5 min; config 1 h.
 - Todo valor gravado leva: timestamp (UTC), dispositivo, grandeza, valor, unidade e qualidade (`ok`, `timeout`, `fora_faixa`, `estimado`, `manual`).
 - Fuso de exibição: America/Araguaina (Tocantins). Gravação sempre em UTC.
 - Tratar **reset/rollover do totalizador** e **troca de medidor**: nunca gerar consumo negativo nem picos falsos.
@@ -174,7 +177,7 @@ Padrão: `<grandeza>[_<fase ou qualificador>]`, sem unidade no nome (a unidade f
 
 ## 9. Convenções de código
 
-- Interface, relatórios e mensagens ao usuário em **português do Brasil**; código e nomes de variáveis em **[A DEFINIR]** português ou inglês (manter um só padrão).
+- Interface, relatórios, mensagens ao usuário, código e nomes de variáveis em **português do Brasil** (nomes de identificadores sem acento).
 - Unidades sempre explícitas: no mapa, no banco e nas variáveis de cálculo (`energia_kwh`, `vapor_t`).
 - Configuração em YAML/CSV. Nada de endereço, IP, ID, fator ou preço fixo no código.
 - Toda nova grandeza ou dispositivo entra primeiro no mapa/configuração, depois no código.
@@ -182,12 +185,23 @@ Padrão: `<grandeza>[_<fase ou qualificador>]`, sem unidade no nome (a unidade f
 
 ## 10. Comandos
 
-**[A DEFINIR]** conforme a stack, por exemplo:
+Ambiente: `python -m venv .venv` e `.venv\Scripts\pip install -r requirements.txt` (Python 3.12).
+
+**Fluxo principal (campo):**
 ```
-python -m coletor --config config/dispositivos.yaml   # inicia a coleta
-python -m tests.simulador                           # sobe escravos Modbus simulados
-pytest                                              # roda os testes
+python -m coletor --config config/local/dispositivos.yaml     # coleta (Ctrl+C para parar)
+python -m api --config config/local/dispositivos.yaml         # telas em http://127.0.0.1:8000
 ```
+**Fluxo de testes / depuração:**
+```
+pytest                                                         # unitários + integração (sem hardware)
+python -m tests.simulador [--acelerar 60] [--queda 120:45] [--reset 300] [--estrito]
+python -m coletor --config config/dispositivos.simulador.yaml --debug   # TX/RX em hex + valores decodificados
+python -m api --config config/dispositivos.simulador.yaml
+python -m ferramentas.varrer_serial --listar | --porta COM3 --mapa config/mapas/weg_mmw02.csv
+python -m ferramentas.validar_campo --config <yaml> --dispositivo <nome>   # Excel para conferir com o display
+```
+`config/local/` (fora do git) guarda a configuração real; o modelo é `config/dispositivos.exemplo.yaml`.
 
 ## 11. Fluxo de trabalho com o Claude
 

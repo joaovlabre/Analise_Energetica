@@ -141,3 +141,21 @@ async def test_api_expoe_dados(ambiente):
         r = cliente.get(pagina)
         assert r.status_code == 200 and "SGE" in r.text
     assert cliente.get("/api/dispositivos/999/atual").status_code == 404
+
+
+async def test_validar_campo_gera_planilha(ambiente, tmp_path):
+    from openpyxl import load_workbook
+
+    from ferramentas.validar_campo import gerar_excel, ler_todos
+
+    servidor, coletor, engine, cfg = ambiente
+    weg = coletor.dispositivos[0]
+    pontos = carregar_mapa(MAPA_WEG)
+    resultados = await ler_todos(weg.barramento.cliente, 1, pontos)
+    assert len(resultados) == len(pontos) and not any(r.erro for r in resultados)
+    tensao = next(r for r in resultados if r.ponto.grandeza == "tensao_an")
+    assert 200 < tensao.valor_mapa < 240
+    assert set(tensao.valores) == {"ABCD", "CDAB", "BADC", "DCBA"}
+    arq = gerar_excel(resultados, tmp_path / "v.xlsx", {"Dispositivo": "WEG"})
+    ws = load_workbook(arq).active
+    assert any(c.value == "VALOR NO DISPLAY" for c in ws[3])
