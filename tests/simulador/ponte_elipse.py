@@ -66,7 +66,9 @@ class ConexaoElipse:
                 return resp
             except (OSError, asyncio.TimeoutError, asyncio.IncompleteReadError) as e:
                 self._falhas += 1
-                if self._falhas >= self.reconectar_apos or isinstance(e, (OSError, asyncio.IncompleteReadError)):
+                conexao_caiu = isinstance(e, (ConnectionError, asyncio.IncompleteReadError)) or (
+                    isinstance(e, OSError) and not isinstance(e, TimeoutError))  # TimeoutError é subclasse de OSError
+                if self._falhas >= self.reconectar_apos or conexao_caiu:
                     self._falhas = 0
                     self._fechar()
                 raise ErroPonte(f"Elipse sem resposta: {e!r}") from e
