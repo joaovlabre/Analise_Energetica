@@ -103,9 +103,11 @@ class ClienteModbus:
             raise ValueError(f"função {funcao} não permitida: o coletor é somente leitura")
         try:
             rr = await metodo(endereco, count=quantidade, device_id=unidade)
-        except ModbusException as e:
-            raise ErroComunicacao(f"{self.barramento.nome} id {unidade}: {e}") from e
-        except (OSError, TimeoutError) as e:
+        except (ModbusException, OSError, TimeoutError) as e:
+            # Sem resposta: fecha a conexão para que a próxima tentativa abra uma nova.
+            # Gateways (e o Elipse Modbus Simulator) podem travar a sessão TCP; reconectar resolve.
+            # Exceções 0A/0B do gateway NÃO passam por aqui: a sessão está boa, só o medidor não respondeu.
+            self.fechar()
             raise ErroComunicacao(f"{self.barramento.nome} id {unidade}: {e}") from e
         if rr.isError():
             codigo = getattr(rr, "exception_code", 0) or 0

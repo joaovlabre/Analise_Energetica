@@ -7,6 +7,8 @@ const SGE = {
   },
   num(v, casas = 2) {
     if (v === null || v === undefined || Number.isNaN(v)) return "—";
+    const a = Math.abs(v);
+    if (a >= 1e12 || (a > 0 && a < 1e-4)) return Number(v).toExponential(3).replace(".", ",");
     return Number(v).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
   },
   casas(unidade, grandeza) {

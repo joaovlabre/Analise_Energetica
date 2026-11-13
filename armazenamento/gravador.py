@@ -82,11 +82,12 @@ def gravar_estado_comunicacao(
     dados = dict(
         online=online,
         ts_atualizacao_utc=ts_utc,
-        ts_ultima_ok_utc=ts_ultima_ok,
         pedidos_ok=pedidos_ok,
         pedidos_falha=pedidos_falha,
         ultimo_erro=(ultimo_erro or "")[:255] or None,
     )
+    if ts_ultima_ok is not None:  # coletor recém-iniciado sem comunicação não apaga a última leitura boa do banco
+        dados["ts_ultima_ok_utc"] = ts_ultima_ok
     with engine.begin() as con:
         r = con.execute(
             update(E.estado_comunicacao).where(E.estado_comunicacao.c.dispositivo_id == dispositivo_id).values(**dados)
