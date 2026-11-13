@@ -1,0 +1,10 @@
+grandeza,descricao,funcao,endereco,base,tipo,word_order,escala,unidade,grupo,verificado,obs
+registro_01,Registrador 1 do Elipse Modbus Simulator,03,1,1,UINT16,ABCD,1,,instantaneo,nao,MAPA DE TESTE (nao e medidor): Elipse enderecado a partir de 1
+registro_02,Registrador 2,03,2,1,UINT16,ABCD,1,,instantaneo,nao,
+registro_03,Registrador 3,03,3,1,UINT16,ABCD,1,,instantaneo,nao,
+registro_04,Registrador 4,03,4,1,UINT16,ABCD,1,,instantaneo,nao,
+registro_05,Registrador 5,03,5,1,UINT16,ABCD,1,,instantaneo,nao,
+registro_06,Registrador 6,03,6,1,INT16,ABCD,1,,instantaneo,nao,Mesmo dado interpretado com sinal
+registro_07_08_u32,Registradores 7-8 como UINT32,03,7,1,UINT32,ABCD,1,,instantaneo,nao,Para conferir word order: digitar 7=1 e 8=0 -> 65536 (ABCD)
+registro_09_10_f32,Registradores 9-10 como FLOAT32,03,9,1,FLOAT32,ABCD,1,,instantaneo,nao,Digitar 9=17244 (0x435C) e 10=32768 (0x8000) -> 220.5
+registro_20,Registrador 20 (fim da tabela padrao),03,20,1,UINT16,ABCD,1,,status,nao,O simulador tem 20 registradores por padrao

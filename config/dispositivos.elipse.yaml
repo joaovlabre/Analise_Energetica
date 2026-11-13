@@ -1,0 +1,38 @@
+# Teste de interoperabilidade com o Elipse Modbus Simulator (ElipseModSim.exe).
+# No simulador: PLCs Quantity = 1, Initial Port = 502, Protocol = Modbus TCP, REGISTERS = 20, Start.
+# Limitações do Elipse (manual v1.0.36): só TCP/IP, só holding registers (FC 03), no máximo 255
+# registradores, ID sempre 1, valores aleatórios 0..65535. NÃO serve para simular os mapas dos medidores.
+banco:
+  url: sqlite:///dados/sge_elipse.db
+
+api:
+  host: 127.0.0.1
+  porta: 8000
+
+coleta:
+  ciclo_base_s: 1.0
+  reconexao_s: 5.0
+  taxas:
+    instantaneo: {leitura_s: 2,  gravacao_s: 10}
+    status:      {leitura_s: 10, gravacao_s: 10}
+
+agregacao:
+  grandezas: []          # sem totalizador neste teste
+
+barramentos:
+  - nome: elipse
+    tipo: tcp            # use rtu_over_tcp se o simulador estiver em "Protocol = Modbus RTU"
+    host: 127.0.0.1
+    porta_tcp: 502
+    timeout_s: 1.0
+    retentativas: 1
+    pausa_entre_pedidos_ms: 0
+
+dispositivos:
+  - nome: ELIPSE_PLC1
+    modelo: Elipse Modbus Simulator
+    barramento: elipse
+    endereco_modbus: 1
+    mapa: config/mapas/teste_elipse_modsim.csv
+    grupos: [instantaneo, status]
+    local: Teste
