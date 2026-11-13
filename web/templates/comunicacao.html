@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="cartao">
+  <h2>Estado dos dispositivos</h2>
+  <table>
+    <thead><tr><th>Dispositivo</th><th>Modelo</th><th>Barramento / ID</th><th>Estado</th><th>Última leitura ok</th><th style="text-align:right">Pedidos ok</th><th style="text-align:right">Falhas</th><th>Último erro</th></tr></thead>
+    <tbody id="estado"></tbody>
+  </table>
+</div>
+<div class="cartao">
+  <h2>Eventos de comunicação</h2>
+  <table>
+    <thead><tr><th>Data/hora</th><th>Dispositivo</th><th>Evento</th><th style="text-align:right">Lacuna</th><th>Detalhe</th></tr></thead>
+    <tbody id="eventos"></tbody>
+  </table>
+</div>
+<script>
+const SELO_EVENTO = { falha: "falha", retorno: "ok", excecao_modbus: "aviso", inicio: "neutro", fim: "neutro" };
+function duracao(s) {
+  if (s === null || s === undefined) return "";
+  if (s < 120) return `${SGE.num(s, 0)} s`;
+  if (s < 7200) return `${SGE.num(s / 60, 1)} min`;
+  return `${SGE.num(s / 3600, 1)} h`;
+}
+async function atualizar() {
+  const lista = await SGE.get("/api/dispositivos");
+  document.getElementById("estado").innerHTML = lista.map(d => `<tr><td>${d.nome}</td><td>${d.modelo}</td>
+    <td>${d.barramento || ""} / ${d.endereco_modbus ?? ""}</td><td>${SGE.selo(d.online)}</td><td>${SGE.dataHora(d.ultima_ok)}</td>
+    <td class="num">${d.pedidos_ok ?? ""}</td><td class="num">${d.pedidos_falha ?? ""}</td><td>${d.ultimo_erro || ""}</td></tr>`).join("");
+  const ev = await SGE.get("/api/comunicacao?limite=300");
+  document.getElementById("eventos").innerHTML = ev.map(e => `<tr><td>${SGE.dataHora(e.ts)}</td><td>${e.dispositivo}</td>
+    <td><span class="selo ${SELO_EVENTO[e.tipo] || 'neutro'}">${e.tipo}</span></td><td class="num">${duracao(e.duracao_s)}</td><td>${e.detalhe || ""}</td></tr>`).join("")
+    || '<tr><td colspan="5" class="vazio">Sem eventos.</td></tr>';
+}
+atualizar();
+setInterval(atualizar, 5000);
+</script>
+{% endblock %}

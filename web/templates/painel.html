@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div id="dispositivos" class="dispositivos"></div>
+<div class="cartao">
+  <h2 id="titulo-disp">—</h2>
+  <div id="estado" style="margin-bottom:12px"></div>
+  <div id="tiles" class="tiles"></div>
+</div>
+<div class="cartao">
+  <h2>Todas as grandezas</h2>
+  <table>
+    <thead><tr><th>Grupo</th><th>Grandeza</th><th style="text-align:right">Valor</th><th>Unidade</th><th>Qualidade</th><th>Lido em</th></tr></thead>
+    <tbody id="tabela"></tbody>
+  </table>
+</div>
+<script>
+const ROTULOS = {
+  potencia_ativa_total: "Potência ativa", potencia_reativa_total: "Potência reativa", potencia_aparente_total: "Potência aparente",
+  fp_total: "Fator de potência", tensao_ff_media: "Tensão F-F média", tensao_fn_media: "Tensão F-N média",
+  corrente_media: "Corrente média", frequencia: "Frequência", energia_ativa_importada: "Energia ativa (totalizador)",
+  energia_reativa_importada: "Energia reativa (totalizador)",
+};
+let lista = [], atual = null;
+
+function desenharBotoes() {
+  document.getElementById("dispositivos").innerHTML = lista.map(d =>
+    `<button data-id="${d.id}" class="${d.id === atual ? 'ativo' : ''}">${d.nome} ${SGE.selo(d.online)}</button>`).join("");
+  document.querySelectorAll("#dispositivos button").forEach(b => b.onclick = () => { atual = +b.dataset.id; atualizar(); });
+}
+
+async function atualizar() {
+  try {
+    lista = await SGE.get("/api/dispositivos");
+    if (!lista.length) { document.getElementById("tiles").innerHTML = '<div class="vazio">Nenhum dispositivo cadastrado. Inicie o coletor.</div>'; return; }
+    if (atual === null || !lista.find(d => d.id === atual)) atual = lista[0].id;
+    desenharBotoes();
+    const d = lista.find(x => x.id === atual);
+    document.getElementById("titulo-disp").textContent = `${d.nome} · ${d.modelo}${d.local ? " · " + d.local : ""}`;
+    document.getElementById("estado").innerHTML = `${SGE.selo(d.online)} <span style="color:var(--text-muted);margin-left:8px">última leitura ok: ${SGE.dataHora(d.ultima_ok)}${d.ultimo_erro ? " · " + d.ultimo_erro : ""}</span>`;
+    const r = await SGE.get(`/api/dispositivos/${atual}/atual`);
+    const porNome = Object.fromEntries(r.valores.map(v => [v.grandeza, v]));
+    document.getElementById("tiles").innerHTML = r.destaques.filter(g => porNome[g]).map(g => {
+      const v = porNome[g];
+      const ruim = v.qualidade !== "ok";
+      return `<div class="tile"><div class="rotulo">${ROTULOS[g] || g}</div>
+        <div class="valor ${ruim ? 'qual-ruim' : ''}" title="qualidade: ${v.qualidade}">${SGE.num(v.valor, SGE.casas(v.unidade, g))}<span class="unid">${v.unidade}</span></div>
+        ${ruim ? `<div class="selo aviso">${v.qualidade}</div>` : ""}</div>`;
+    }).join("") || '<div class="vazio">Sem leituras ainda.</div>';
+    document.getElementById("tabela").innerHTML = r.valores.map(v => `<tr>
+        <td>${v.grupo}</td><td>${v.grandeza}</td><td class="num">${SGE.num(v.valor, SGE.casas(v.unidade, v.grandeza))}</td>
+        <td>${v.unidade}</td><td class="${v.qualidade === 'ok' ? 'qual-ok' : 'qual-ruim'}">${v.qualidade}</td><td>${SGE.dataHora(v.ts)}</td></tr>`).join("");
+  } catch (e) { console.error(e); }
+}
+atualizar();
+setInterval(atualizar, 2000);
+</script>
+{% endblock %}

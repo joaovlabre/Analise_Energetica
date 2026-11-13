@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -14,6 +15,11 @@ def configurar_log(nome_arquivo: str = "sge.log", debug: bool = False, pasta: st
     for h in list(raiz.handlers):
         raiz.removeHandler(h)
 
+    for fluxo in (sys.stdout, sys.stderr):  # console do Windows: acentos corretos
+        try:
+            fluxo.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
     console = logging.StreamHandler()
     console.setFormatter(formato)
     raiz.addHandler(console)
@@ -24,5 +30,6 @@ def configurar_log(nome_arquivo: str = "sge.log", debug: bool = False, pasta: st
     arquivo.setFormatter(formato)
     raiz.addHandler(arquivo)
 
-    # pymodbus é muito verboso em DEBUG; só mostramos o que nós mesmos logamos
-    logging.getLogger("pymodbus").setLevel(logging.WARNING)
+    # pymodbus é verboso (e anexa dumps de quadros aos erros); o coletor loga TX/RX e falhas por conta própria
+    for nome in ("pymodbus", "pymodbus.logging"):
+        logging.getLogger(nome).setLevel(logging.CRITICAL)

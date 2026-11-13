@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SGE Agronorte · {{ titulo }}</title>
+<link rel="stylesheet" href="/static/sge.css">
+<script src="/static/chart.umd.min.js"></script>
+<script src="/static/sge.js"></script>
+</head>
+<body>
+<header class="topo">
+  <div class="marca">SGE <span>Agronorte · Nutrição Animal</span></div>
+  <nav>
+    <a href="/" class="{{ 'ativo' if titulo == 'Painel' }}">Painel</a>
+    <a href="/tendencias" class="{{ 'ativo' if titulo == 'Tendências' }}">Tendências</a>
+    <a href="/energia" class="{{ 'ativo' if titulo == 'Energia 15 min' }}">Energia 15 min</a>
+    <a href="/comunicacao" class="{{ 'ativo' if titulo == 'Comunicação' }}">Comunicação</a>
+  </nav>
+  <div id="relogio" class="relogio"></div>
+</header>
+<main>
+{% block conteudo %}{% endblock %}
+</main>
+<script>setInterval(() => { document.getElementById('relogio').textContent = new Date().toLocaleString('pt-BR', {timeZone: 'America/Araguaina'}); }, 1000);</script>
+</body>
+</html>

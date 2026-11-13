@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="filtros">
+  <label>Dispositivo <select id="disp"></select></label>
+  <label>Grandeza
+    <select id="grandeza"><option value="energia_ativa_importada">Energia ativa</option><option value="energia_reativa_importada">Energia reativa</option></select></label>
+  <label>Período
+    <select id="horas"><option value="6">6 horas</option><option value="24" selected>24 horas</option><option value="168">7 dias</option></select></label>
+  <button id="atualizar">Atualizar</button>
+</div>
+<div class="cartao">
+  <h2>Consumo por intervalo de 15 min</h2>
+  <div class="resumo">
+    <div>Total no período<br><b id="total">—</b></div>
+    <div>Intervalos<br><b id="n">—</b></div>
+    <div>Estimados<br><b id="est">—</b></div>
+  </div>
+  <div class="grafico"><canvas id="grafico"></canvas></div>
+  <p style="color:var(--text-muted);font-size:12px">Barras claras = intervalo <b>estimado</b> (lacuna de comunicação, reset do totalizador ou intervalo incompleto). Passe o mouse para ver o motivo.</p>
+  <details><summary>Ver tabela</summary>
+    <table><thead><tr><th>Início</th><th style="text-align:right">Consumo</th><th>Qualidade</th><th>Motivo</th></tr></thead><tbody id="tabela"></tbody></table>
+  </details>
+</div>
+<script>
+let grafico = null;
+const elDisp = document.getElementById("disp"), elG = document.getElementById("grandeza"), elH = document.getElementById("horas");
+
+async function desenhar() {
+  if (!elDisp.value) return;
+  const r = await SGE.get(`/api/energia?dispositivo_id=${elDisp.value}&grandeza=${elG.value}&horas=${elH.value}`);
+  const iv = r.intervalos;
+  document.getElementById("total").textContent = `${SGE.num(r.total, 1)} ${r.unidade}`;
+  document.getElementById("n").textContent = iv.length;
+  document.getElementById("est").textContent = iv.filter(i => i.qualidade !== "ok").length;
+  const azul = SGE.cor("--series-1");
+  const dados = { labels: iv.map(i => SGE.hora(i.inicio)), datasets: [{
+    label: r.grandeza, data: iv.map(i => i.consumo),
+    backgroundColor: iv.map(i => i.qualidade === "ok" ? azul : azul + "55"),
+    borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "start", barPercentage: 0.9, categoryPercentage: 0.95 }] };
+  const opcoes = { responsive: true, maintainAspectRatio: false, animation: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: {
+      title: c => SGE.dataHora(iv[c[0].dataIndex].inicio),
+      label: c => `${SGE.num(c.parsed.y, 2)} ${r.unidade}`,
+      afterLabel: c => iv[c.dataIndex].qualidade !== "ok" ? `estimado: ${iv[c.dataIndex].motivo || ""}` : "" } } },
+    scales: SGE.eixos(r.unidade) };
+  if (grafico) grafico.destroy();
+  grafico = new Chart(document.getElementById("grafico"), { type: "bar", data: dados, options: opcoes });
+  document.getElementById("tabela").innerHTML = iv.slice().reverse().map(i =>
+    `<tr><td>${SGE.dataHora(i.inicio)}</td><td class="num">${SGE.num(i.consumo, 2)} ${r.unidade}</td><td>${i.qualidade}</td><td>${i.motivo || ""}</td></tr>`).join("")
+    || '<tr><td colspan="4" class="vazio">Nenhum intervalo fechado ainda (o primeiro aparece após 15 min de coleta).</td></tr>';
+}
+
+(async () => {
+  await SGE.preencherDispositivos(elDisp);
+  await desenhar();
+  elDisp.onchange = elG.onchange = elH.onchange = document.getElementById("atualizar").onclick = desenhar;
+  setInterval(desenhar, 60000);
+})();
+</script>
+{% endblock %}

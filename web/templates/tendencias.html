@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="filtros">
+  <label>Dispositivo <select id="disp"></select></label>
+  <label>Grandeza <select id="grandeza"></select></label>
+  <label>Período
+    <select id="horas">
+      <option value="1">1 hora</option><option value="6">6 horas</option><option value="24" selected>24 horas</option>
+      <option value="168">7 dias</option><option value="720">30 dias</option>
+    </select></label>
+  <button id="atualizar">Atualizar</button>
+</div>
+<div class="cartao">
+  <h2 id="titulo">Tendência</h2>
+  <div class="grafico"><canvas id="grafico"></canvas></div>
+  <details><summary>Ver tabela</summary><table><thead><tr><th>Data/hora</th><th style="text-align:right">Valor</th><th>Qualidade</th></tr></thead><tbody id="tabela"></tbody></table></details>
+</div>
+<script>
+let grafico = null;
+const elDisp = document.getElementById("disp"), elG = document.getElementById("grandeza"), elH = document.getElementById("horas");
+
+async function carregarGrandezas() {
+  const lista = await SGE.get(`/api/grandezas?dispositivo_id=${elDisp.value}`);
+  const anterior = elG.value || "potencia_ativa_total";
+  elG.innerHTML = lista.map(g => `<option ${g === anterior ? "selected" : ""}>${g}</option>`).join("");
+}
+
+async function desenhar() {
+  if (!elDisp.value || !elG.value) return;
+  const r = await SGE.get(`/api/tendencia?dispositivo_id=${elDisp.value}&grandeza=${elG.value}&horas=${elH.value}`);
+  document.getElementById("titulo").textContent = `${r.grandeza}${r.unidade ? " (" + r.unidade + ")" : ""}`;
+  const casas = SGE.casas(r.unidade, r.grandeza);
+  const dados = { labels: r.pontos.map(p => SGE.dataHora(p[0])), datasets: [{
+    label: r.grandeza, data: r.pontos.map(p => p[1]), borderColor: SGE.cor("--series-1"), borderWidth: 2,
+    pointRadius: 0, pointHoverRadius: 4, tension: 0, spanGaps: false }] };
+  const opcoes = { responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${SGE.num(c.parsed.y, casas)} ${r.unidade}` } } },
+    scales: SGE.eixos(r.unidade) };
+  if (grafico) grafico.destroy();
+  grafico = new Chart(document.getElementById("grafico"), { type: "line", data: dados, options: opcoes });
+  document.getElementById("tabela").innerHTML = r.pontos.slice(-500).reverse().map(p =>
+    `<tr><td>${SGE.dataHora(p[0])}</td><td class="num">${SGE.num(p[1], casas)}</td><td>${p[2]}</td></tr>`).join("");
+}
+
+(async () => {
+  await SGE.preencherDispositivos(elDisp);
+  await carregarGrandezas();
+  await desenhar();
+  elDisp.onchange = async () => { await carregarGrandezas(); desenhar(); };
+  elG.onchange = elH.onchange = document.getElementById("atualizar").onclick = desenhar;
+  setInterval(desenhar, 60000);
+})();
+</script>
+{% endblock %}

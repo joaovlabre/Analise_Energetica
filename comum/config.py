@@ -70,6 +70,7 @@ class Dispositivo(BaseModel):
 
 class Coleta(BaseModel):
     ciclo_base_s: float = 1.0
+    reconexao_s: float = 10.0  # intervalo entre tentativas quando o dispositivo está sem comunicação
     taxas: dict[str, TaxaGrupo]
     faixas: dict[str, Faixa] = Field(default_factory=dict)  # chave = prefixo da grandeza (ex.: "tensao_")
 

@@ -1,0 +1,64 @@
+# MODELO da configuração de campo. Copie para config/local/dispositivos.yaml (fora do git)
+# e preencha com os dados reais: porta COM, baud rate, paridade e ID Modbus do medidor.
+# Itens [A CONFIRMAR] precisam ser conferidos no display/parametrização do medidor.
+banco:
+  url: sqlite:///dados/sge.db          # futuro: mssql+pyodbc://... (SQL Server)
+
+api:
+  host: 0.0.0.0                        # 127.0.0.1 = só este PC; 0.0.0.0 = acessível na rede
+  porta: 8000
+
+coleta:
+  ciclo_base_s: 1.0
+  reconexao_s: 10.0
+  taxas:
+    instantaneo: {leitura_s: 2,    gravacao_s: 60}
+    energia:     {leitura_s: 60,   gravacao_s: 60}
+    demanda:     {leitura_s: 60,   gravacao_s: 60}
+    qualidade:   {leitura_s: 60,   gravacao_s: 60}
+    status:      {leitura_s: 300,  gravacao_s: 300}
+    config:      {leitura_s: 3600, gravacao_s: 3600}
+  faixas:
+    tensao_:            {minimo: 0,   maximo: 600}     # ajustar se o medidor estiver em MT (valores de primário)
+    corrente_:          {minimo: 0,   maximo: 5000}
+    frequencia:         {minimo: 55,  maximo: 65}
+    fp_:                {minimo: -1,  maximo: 1}
+    fp_caracteristica:  {minimo: -1,  maximo: 2}
+    thd_:               {minimo: 0,   maximo: 100}
+    desequilibrio_:     {minimo: 0,   maximo: 100}
+
+agregacao:
+  intervalo_min: 15
+  grandezas: [energia_ativa_importada, energia_reativa_importada]
+  max_lacuna_min: 5
+  periodo_execucao_s: 60
+
+barramentos:
+  # Fase inicial: conversor USB-RS485 ligado direto no PC
+  - nome: rs485_usb
+    tipo: serial
+    porta: COM3                        # [A CONFIRMAR] Gerenciador de Dispositivos > Portas (COM e LPT)
+    baudrate: 9600                     # [A CONFIRMAR] igual ao parametrizado no medidor
+    paridade: N                        # [A CONFIRMAR] N, E ou O
+    bits_dados: 8
+    bits_parada: 1
+    timeout_s: 1.0
+    retentativas: 2
+    pausa_entre_pedidos_ms: 30
+
+  # Fase seguinte: gateway Ethernet/RS-485 no painel, servidor lê por Modbus TCP
+  # - nome: gateway_qgbt
+  #   tipo: tcp                        # ou rtu_over_tcp se o gateway só repassar o quadro RTU
+  #   host: 192.168.0.50               # [A CONFIRMAR]
+  #   porta_tcp: 502
+  #   timeout_s: 1.0
+  #   retentativas: 2
+
+dispositivos:
+  - nome: MED_01                       # nome do ponto de medição (ex.: QGBT_GERAL, CCM_PELETIZADORA)
+    modelo: WEG MMW02                  # ou: Schneider GoLogic EM3261
+    barramento: rs485_usb
+    endereco_modbus: 1                 # [A CONFIRMAR]
+    mapa: config/mapas/weg_mmw02.csv   # ou: config/mapas/schneider_gologic_em3261.csv
+    local: "[A DEFINIR]"
+    ativo: true
