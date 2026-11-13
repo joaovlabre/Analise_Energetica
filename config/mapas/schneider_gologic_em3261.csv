@@ -1,0 +1,55 @@
+grandeza,descricao,funcao,endereco,base,tipo,word_order,escala,unidade,grupo,verificado,obs
+numero_serie,Numero de serie,03,130,1,UINT32,ABCD,1,,status,nao,
+tp_primario,Primario do TP,03,2026,1,FLOAT32,ABCD,1,V,config,nao,Ler para conferir relacao configurada (nao escrever)
+tp_secundario,Secundario do TP,03,2028,1,UINT16,ABCD,1,V,config,nao,
+tc_primario,Primario do TC,03,2030,1,UINT16,ABCD,1,A,config,nao,
+tc_secundario,Secundario do TC,03,2031,1,UINT16,ABCD,1,A,config,nao,
+falhas_alimentacao,Numero de falhas da alimentacao auxiliar,03,1829,1,UINT16,ABCD,1,,status,nao,
+tempo_operacao,Tempo de operacao do medidor,03,2004,1,UINT32,ABCD,1,s,status,nao,
+corrente_a,Corrente fase A,03,3000,1,FLOAT32,ABCD,1,A,instantaneo,nao,
+corrente_b,Corrente fase B,03,3002,1,FLOAT32,ABCD,1,A,instantaneo,nao,
+corrente_c,Corrente fase C,03,3004,1,FLOAT32,ABCD,1,A,instantaneo,nao,
+corrente_n,Corrente de neutro,03,3006,1,FLOAT32,ABCD,1,A,instantaneo,nao,
+corrente_media,Corrente media,03,3010,1,FLOAT32,ABCD,1,A,instantaneo,nao,
+desequilibrio_corrente_max,Desequilibrio de corrente (pior fase),03,3018,1,FLOAT32,ABCD,1,%,qualidade,nao,
+tensao_ab,Tensao A-B,03,3020,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_bc,Tensao B-C,03,3022,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_ca,Tensao C-A,03,3024,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_ff_media,Tensao fase-fase media,03,3026,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_an,Tensao A-N,03,3028,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_bn,Tensao B-N,03,3030,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_cn,Tensao C-N,03,3032,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_fn_media,Tensao fase-neutro media,03,3036,1,FLOAT32,ABCD,1,V,instantaneo,nao,
+desequilibrio_tensao_ff_max,Desequilibrio de tensao F-F (pior),03,3044,1,FLOAT32,ABCD,1,%,qualidade,nao,
+desequilibrio_tensao_fn_max,Desequilibrio de tensao F-N (pior),03,3052,1,FLOAT32,ABCD,1,%,qualidade,nao,
+potencia_ativa_a,Potencia ativa fase A,03,3054,1,FLOAT32,ABCD,1,kW,instantaneo,nao,
+potencia_ativa_b,Potencia ativa fase B,03,3056,1,FLOAT32,ABCD,1,kW,instantaneo,nao,
+potencia_ativa_c,Potencia ativa fase C,03,3058,1,FLOAT32,ABCD,1,kW,instantaneo,nao,
+potencia_ativa_total,Potencia ativa total,03,3060,1,FLOAT32,ABCD,1,kW,instantaneo,nao,
+potencia_reativa_a,Potencia reativa fase A,03,3062,1,FLOAT32,ABCD,1,kvar,instantaneo,nao,
+potencia_reativa_b,Potencia reativa fase B,03,3064,1,FLOAT32,ABCD,1,kvar,instantaneo,nao,
+potencia_reativa_c,Potencia reativa fase C,03,3066,1,FLOAT32,ABCD,1,kvar,instantaneo,nao,
+potencia_reativa_total,Potencia reativa total,03,3068,1,FLOAT32,ABCD,1,kvar,instantaneo,nao,
+potencia_aparente_a,Potencia aparente fase A,03,3070,1,FLOAT32,ABCD,1,kVA,instantaneo,nao,
+potencia_aparente_b,Potencia aparente fase B,03,3072,1,FLOAT32,ABCD,1,kVA,instantaneo,nao,
+potencia_aparente_c,Potencia aparente fase C,03,3074,1,FLOAT32,ABCD,1,kVA,instantaneo,nao,
+potencia_aparente_total,Potencia aparente total,03,3076,1,FLOAT32,ABCD,1,kVA,instantaneo,nao,
+fp_a_4q,Fator de potencia fase A (4 quadrantes),03,3078,1,FLOAT32_4Q_PF,ABCD,1,,instantaneo,nao,Codificacao especial: ver aba Data Types (>1 ou <-1 = adiantado)
+fp_b_4q,Fator de potencia fase B (4 quadrantes),03,3080,1,FLOAT32_4Q_PF,ABCD,1,,instantaneo,nao,
+fp_c_4q,Fator de potencia fase C (4 quadrantes),03,3082,1,FLOAT32_4Q_PF,ABCD,1,,instantaneo,nao,
+fp_total_4q,Fator de potencia total (4 quadrantes),03,3084,1,FLOAT32_4Q_PF,ABCD,1,,instantaneo,nao,
+frequencia,Frequencia,03,3110,1,FLOAT32,ABCD,1,Hz,instantaneo,nao,
+fp_total,Fator de potencia total (formato IEC),03,3192,1,FLOAT32,ABCD,1,,instantaneo,nao,Formato simples; preferir este para exibicao
+energia_ativa_importada,Energia ativa consumida - permanente,03,3304,1,INT64,ABCD,0.001,kWh,energia,nao,Contador nao zeravel: fonte principal para consumo. Medidor entrega Wh
+energia_reativa_importada,Energia reativa consumida - permanente,03,3320,1,INT64,ABCD,0.001,kvarh,energia,nao,Medidor entrega varh
+energia_aparente,Energia aparente consumida - permanente,03,3336,1,INT64,ABCD,0.001,kVAh,energia,nao,Medidor entrega VAh
+energia_ativa_importada_zeravel,Energia ativa consumida - zeravel,03,3204,1,INT64,ABCD,0.001,kWh,energia,nao,Pode ser zerado pelo IHM/comando: usar so para conferencia
+energia_reativa_importada_zeravel,Energia reativa consumida - zeravel,03,3220,1,INT64,ABCD,0.001,kvarh,energia,nao,
+energia_reativa_q1,Energia reativa quadrante I,03,3272,1,INT64,ABCD,0.001,kvarh,energia,nao,
+energia_reativa_q2,Energia reativa quadrante II,03,3276,1,INT64,ABCD,0.001,kvarh,energia,nao,
+energia_ativa_importada_float,Energia ativa consumida (FLOAT32),03,2700,1,FLOAT32,ABCD,1,kWh,energia,nao,Alternativa ao INT64; perde resolucao com valores altos
+carregamento_a,Carregamento fase A (% da corrente nominal),03,43500,1,FLOAT32,ABCD,1,%,instantaneo,nao,
+carregamento_b,Carregamento fase B,03,43502,1,FLOAT32,ABCD,1,%,instantaneo,nao,
+carregamento_c,Carregamento fase C,03,43504,1,FLOAT32,ABCD,1,%,instantaneo,nao,
+carregamento_medio,Carregamento medio,03,43506,1,FLOAT32,ABCD,1,%,instantaneo,nao,
+horas_carga_permanente,Tempo com carga (permanente),03,43560,1,UINT32,ABCD,1,s,status,nao,Util para horas de funcionamento do equipamento

@@ -1,0 +1,22 @@
+# Ambiente Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Dados e logs locais (nunca versionar histórico de medição)
+dados/
+logs/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+relatorios/saida/
+
+# Configuração local: IPs, portas COM reais, credenciais, tarifas
+.env
+config/local/
+
+# IDE
+.vscode/
+.idea/

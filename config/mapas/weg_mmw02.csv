@@ -1,0 +1,65 @@
+grandeza,descricao,funcao,endereco,base,tipo,word_order,escala,unidade,grupo,verificado,obs
+timestamp_medidor,Data/hora do medidor (Unix),04,0,0,UINT32,ABCD,1,s,status,nao,
+tensao_fn_media,Tensao fase-neutro media,04,2,0,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_an,Tensao fase A-N,04,4,0,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_bn,Tensao fase B-N,04,6,0,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_cn,Tensao fase C-N,04,8,0,FLOAT32,ABCD,1,V,instantaneo,nao,
+corrente_media,Corrente media,04,10,0,FLOAT32,ABCD,1,A,instantaneo,nao,
+corrente_a,Corrente fase A,04,12,0,FLOAT32,ABCD,1,A,instantaneo,nao,
+corrente_b,Corrente fase B,04,14,0,FLOAT32,ABCD,1,A,instantaneo,nao,
+corrente_c,Corrente fase C,04,16,0,FLOAT32,ABCD,1,A,instantaneo,nao,
+tensao_ff_media,Tensao fase-fase media,04,18,0,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_ab,Tensao A-B,04,20,0,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_bc,Tensao B-C,04,22,0,FLOAT32,ABCD,1,V,instantaneo,nao,
+tensao_ca,Tensao C-A,04,24,0,FLOAT32,ABCD,1,V,instantaneo,nao,
+fp_total,Fator de potencia total,04,26,0,FLOAT32,ABCD,1,,instantaneo,nao,Sinal/caracteristica no registrador 34
+fp_a,Fator de potencia fase A,04,28,0,FLOAT32,ABCD,1,,instantaneo,nao,
+fp_b,Fator de potencia fase B,04,30,0,FLOAT32,ABCD,1,,instantaneo,nao,
+fp_c,Fator de potencia fase C,04,32,0,FLOAT32,ABCD,1,,instantaneo,nao,
+fp_caracteristica_total,Caracteristica do FP total,04,34,0,FLOAT32,ABCD,1,,instantaneo,nao,Enum: 0=resistivo 1=indutivo 2=capacitivo -1=nenhum
+potencia_ativa_total,Potencia ativa total,04,42,0,FLOAT32,ABCD,0.001,kW,instantaneo,nao,Medidor entrega em W
+potencia_ativa_a,Potencia ativa fase A,04,44,0,FLOAT32,ABCD,0.001,kW,instantaneo,nao,Medidor entrega em W
+potencia_ativa_b,Potencia ativa fase B,04,46,0,FLOAT32,ABCD,0.001,kW,instantaneo,nao,Medidor entrega em W
+potencia_ativa_c,Potencia ativa fase C,04,48,0,FLOAT32,ABCD,0.001,kW,instantaneo,nao,Medidor entrega em W
+potencia_reativa_total,Potencia reativa total,04,50,0,FLOAT32,ABCD,0.001,kvar,instantaneo,nao,Medidor entrega em var
+potencia_reativa_a,Potencia reativa fase A,04,52,0,FLOAT32,ABCD,0.001,kvar,instantaneo,nao,
+potencia_reativa_b,Potencia reativa fase B,04,54,0,FLOAT32,ABCD,0.001,kvar,instantaneo,nao,
+potencia_reativa_c,Potencia reativa fase C,04,56,0,FLOAT32,ABCD,0.001,kvar,instantaneo,nao,
+potencia_aparente_total,Potencia aparente total,04,58,0,FLOAT32,ABCD,0.001,kVA,instantaneo,nao,Medidor entrega em VA
+potencia_aparente_a,Potencia aparente fase A,04,60,0,FLOAT32,ABCD,0.001,kVA,instantaneo,nao,
+potencia_aparente_b,Potencia aparente fase B,04,62,0,FLOAT32,ABCD,0.001,kVA,instantaneo,nao,
+potencia_aparente_c,Potencia aparente fase C,04,64,0,FLOAT32,ABCD,0.001,kVA,instantaneo,nao,
+frequencia,Frequencia,04,66,0,FLOAT32,ABCD,1,Hz,instantaneo,nao,
+corrente_n,Corrente de neutro,04,74,0,FLOAT32,ABCD,1,A,instantaneo,nao,
+demanda_aparente_prevista,Demanda aparente prevista,04,200,0,FLOAT32,ABCD,0.001,kVA,demanda,nao,
+demanda_aparente_ultima,Demanda aparente ultimo intervalo,04,202,0,FLOAT32,ABCD,0.001,kVA,demanda,nao,
+demanda_aparente_pico,Demanda aparente de pico,04,204,0,FLOAT32,ABCD,0.001,kVA,demanda,nao,
+demanda_ativa_prevista,Demanda ativa prevista,04,206,0,FLOAT32,ABCD,0.001,kW,demanda,nao,
+demanda_ativa_ultima,Demanda ativa ultimo intervalo,04,208,0,FLOAT32,ABCD,0.001,kW,demanda,nao,
+demanda_ativa_pico,Demanda ativa de pico,04,210,0,FLOAT32,ABCD,0.001,kW,demanda,nao,
+demanda_reativa_prevista,Demanda reativa total prevista,04,212,0,FLOAT32,ABCD,0.001,kvar,demanda,nao,
+demanda_reativa_ultima,Demanda reativa total ultimo intervalo,04,214,0,FLOAT32,ABCD,0.001,kvar,demanda,nao,
+demanda_reativa_pico,Demanda reativa total de pico,04,216,0,FLOAT32,ABCD,0.001,kvar,demanda,nao,
+energia_ativa_liquida,Energia ativa liquida,04,300,0,FLOAT32,ABCD,1,kWh,energia,nao,FLOAT32 perde resolucao com valores altos: preferir 64 bits
+energia_ativa_bruta,Energia ativa bruta (soma),04,302,0,FLOAT32,ABCD,1,kWh,energia,nao,
+energia_ativa_importada,Energia ativa direta (consumida),04,304,0,FLOAT32,ABCD,1,kWh,energia,nao,Confirmar que direta = consumida pela carga
+energia_ativa_exportada,Energia ativa reversa,04,306,0,FLOAT32,ABCD,1,kWh,energia,nao,
+energia_reativa_liquida,Energia reativa liquida,04,308,0,FLOAT32,ABCD,1,kvarh,energia,nao,
+energia_reativa_bruta,Energia reativa bruta,04,310,0,FLOAT32,ABCD,1,kvarh,energia,nao,
+energia_reativa_importada,Energia reativa direta,04,312,0,FLOAT32,ABCD,1,kvarh,energia,nao,
+energia_reativa_exportada,Energia reativa reversa,04,314,0,FLOAT32,ABCD,1,kvarh,energia,nao,
+energia_reativa_exp_indutiva,Energia reativa reversa indutiva,04,316,0,FLOAT32,ABCD,1,kvarh,energia,nao,
+energia_reativa_exp_capacitiva,Energia reativa reversa capacitiva,04,318,0,FLOAT32,ABCD,1,kvarh,energia,nao,
+energia_reativa_imp_indutiva,Energia reativa direta indutiva,04,320,0,FLOAT32,ABCD,1,kvarh,energia,nao,
+energia_reativa_imp_capacitiva,Energia reativa direta capacitiva,04,322,0,FLOAT32,ABCD,1,kvarh,energia,nao,
+energia_aparente,Energia aparente,04,324,0,FLOAT32,ABCD,1,kVAh,energia,nao,
+thd_tensao_a,THD de tensao fase A (AN ou AB),04,600,0,FLOAT32,ABCD,1,%,qualidade,nao,
+thd_tensao_b,THD de tensao fase B (BN ou BC),04,602,0,FLOAT32,ABCD,1,%,qualidade,nao,
+thd_tensao_c,THD de tensao fase C (CN ou CA),04,604,0,FLOAT32,ABCD,1,%,qualidade,nao,
+thd_corrente_a,THD de corrente fase A,04,606,0,FLOAT32,ABCD,1,%,qualidade,nao,
+thd_corrente_b,THD de corrente fase B,04,608,0,FLOAT32,ABCD,1,%,qualidade,nao,
+thd_corrente_c,THD de corrente fase C,04,610,0,FLOAT32,ABCD,1,%,qualidade,nao,
+energia_ativa_importada_64,Energia ativa importada (64 bits),04,12008,0,INT64,ABCD,A_VERIFICAR,A_VERIFICAR,energia,nao,Unidade/escala e ordem das words nao informadas no manual publico: validar comparando com o reg 304
+energia_ativa_exportada_64,Energia ativa exportada (64 bits),04,12012,0,INT64,ABCD,A_VERIFICAR,A_VERIFICAR,energia,nao,Idem
+energia_reativa_importada_64,Energia reativa importada (64 bits),04,12024,0,INT64,ABCD,A_VERIFICAR,A_VERIFICAR,energia,nao,Idem
+energia_aparente_64,Energia aparente (64 bits),04,12048,0,INT64,ABCD,A_VERIFICAR,A_VERIFICAR,energia,nao,Idem

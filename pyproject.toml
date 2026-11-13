@@ -1,0 +1,11 @@
+[project]
+name = "sge-agronorte"
+version = "0.1.0"
+description = "Sistema de Gestão de Energia — planta de nutrição animal Agronorte"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["ignore::DeprecationWarning"]
