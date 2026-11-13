@@ -33,6 +33,7 @@ class EscravoSimulado:
     pontos: list[Ponto]
     estado: EstadoEletrico = field(default_factory=EstadoEletrico)
     estrito: bool = False  # True: endereço não mapeado -> exceção 02 (como alguns medidores reais)
+    fora_do_ar: bool = False  # medidor desligado / cabo RS-485 interrompido
     tabela: dict[int, dict[int, int]] = field(default_factory=dict)
 
     def atualizar(self) -> None:
@@ -57,12 +58,17 @@ class EscravoSimulado:
 
 @dataclass
 class Falhas:
-    quedas: list[tuple[float, float]] = field(default_factory=list)  # (início_s, duração_s) após o start
+    quedas: list[tuple[float, float]] = field(default_factory=list)  # gateway inteiro sem responder (início_s, duração_s)
+    quedas_escravo: list[tuple[int, float, float]] = field(default_factory=list)  # (id, início_s, duração_s): só um medidor
     resets: list[float] = field(default_factory=list)  # instantes (s) para zerar os totalizadores
 
 
 class ServidorSimulado:
-    def __init__(self, escravos: list[EscravoSimulado], host="127.0.0.1", porta=5020, quadro="tcp", falhas: Falhas | None = None):
+    def __init__(self, escravos: list[EscravoSimulado], host="127.0.0.1", porta=5020, quadro="tcp", falhas: Falhas | None = None,
+                 gateway: bool = True):
+        # gateway=True: comporta-se como conversor RS485/TCP (escravo ausente -> exceção 0B);
+        # gateway=False: comporta-se como medidor com Ethernet nativa (escravo ausente -> silêncio)
+        self.gateway = gateway
         self.escravos = {e.unidade: e for e in escravos}
         self.host, self.porta, self.quadro = host, porta, quadro
         self.falhas = falhas or Falhas()
@@ -103,6 +109,12 @@ class ServidorSimulado:
                 e.atualizar()
             await asyncio.sleep(0.5)
 
+    def _escravo_em_queda(self, escravo: EscravoSimulado) -> bool:
+        if escravo.fora_do_ar:
+            return True
+        t = time.monotonic() - self._t0
+        return any(uid == escravo.unidade and ini <= t < ini + dur for uid, ini, dur in self.falhas.quedas_escravo)
+
     def _em_queda(self) -> bool:
         if self.fora_do_ar:
             return True
@@ -112,9 +124,10 @@ class ServidorSimulado:
     # ------------------------------------------------------------------ protocolo
     def _processar_pdu(self, unidade: int, pdu: bytes) -> bytes | None:
         escravo = self.escravos.get(unidade)
-        if escravo is None:
-            return None  # sem resposta, como um escravo ausente no barramento
         funcao = pdu[0]
+        if escravo is None or self._escravo_em_queda(escravo):
+            # gateway: o medidor não respondeu no RS-485 -> exceção 0B; sem gateway: silêncio
+            return bytes([funcao | 0x80, 0x0B]) if self.gateway else None
         if funcao not in (1, 2, 3, 4) or len(pdu) < 5:
             return bytes([funcao | 0x80, 0x01])
         inicio, quantidade = struct.unpack(">HH", pdu[1:5])

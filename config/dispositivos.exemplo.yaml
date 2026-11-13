@@ -34,31 +34,42 @@ agregacao:
   periodo_execucao_s: 60
 
 barramentos:
-  # Fase inicial: conversor USB-RS485 ligado direto no PC
-  - nome: rs485_usb
-    tipo: serial
-    porta: COM3                        # [A CONFIRMAR] Gerenciador de Dispositivos > Portas (COM e LPT)
-    baudrate: 9600                     # [A CONFIRMAR] igual ao parametrizado no medidor
-    paridade: N                        # [A CONFIRMAR] N, E ou O
-    bits_dados: 8
-    bits_parada: 1
-    timeout_s: 1.0
-    retentativas: 2
-    pausa_entre_pedidos_ms: 30
+  # Arquitetura de campo: medidores em série (RS-485) -> gateway RS485/TCP -> switch -> servidor.
+  # Um barramento por gateway. Baud rate, paridade e bits do lado serial são configurados
+  # NO GATEWAY (e iguais em todos os medidores da rede), não aqui.
+  # O coletor mantém UMA conexão TCP por gateway e faz um pedido por vez (a rede RS-485 é half-duplex).
+  - nome: gateway_01
+    tipo: tcp                          # gateway convertendo Modbus TCP <-> RTU (modo "Modbus gateway")
+                                       # use rtu_over_tcp se o gateway estiver em modo transparente (repassa o quadro RTU)
+    host: 192.168.0.50                 # [A CONFIRMAR] IP fixo do gateway
+    porta_tcp: 502                     # [A CONFIRMAR]
+    timeout_s: 1.5                     # gateway + RS-485 somam latência; ajustar após medir em campo
+    retentativas: 1
+    pausa_entre_pedidos_ms: 20
 
-  # Fase seguinte: gateway Ethernet/RS-485 no painel, servidor lê por Modbus TCP
-  # - nome: gateway_qgbt
-  #   tipo: tcp                        # ou rtu_over_tcp se o gateway só repassar o quadro RTU
-  #   host: 192.168.0.50               # [A CONFIRMAR]
-  #   porta_tcp: 502
+  # Alternativa para bancada: conversor USB-RS485 direto no PC
+  # - nome: rs485_usb
+  #   tipo: serial
+  #   porta: COM3
+  #   baudrate: 9600
+  #   paridade: N
   #   timeout_s: 1.0
   #   retentativas: 2
 
 dispositivos:
+  # Um item por medidor da rede serial; o endereco_modbus é o ID do medidor na rede RS-485
+  # (o gateway encaminha pelo Unit ID do Modbus TCP). Cada medidor precisa de um ID diferente.
   - nome: MED_01                       # nome do ponto de medição (ex.: QGBT_GERAL, CCM_PELETIZADORA)
-    modelo: WEG MMW02                  # ou: Schneider GoLogic EM3261
-    barramento: rs485_usb
+    modelo: WEG MMW02
+    barramento: gateway_01
     endereco_modbus: 1                 # [A CONFIRMAR]
-    mapa: config/mapas/weg_mmw02.csv   # ou: config/mapas/schneider_gologic_em3261.csv
+    mapa: config/mapas/weg_mmw02.csv
+    local: "[A DEFINIR]"
+    ativo: true
+  - nome: MED_02
+    modelo: Schneider GoLogic EM3261
+    barramento: gateway_01
+    endereco_modbus: 2                 # [A CONFIRMAR]
+    mapa: config/mapas/schneider_gologic_em3261.csv
     local: "[A DEFINIR]"
     ativo: true

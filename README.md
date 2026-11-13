@@ -9,9 +9,10 @@ As regras do projeto ficam em [CLAUDE.md](CLAUDE.md).
 ## Arquitetura
 
 ```
-Medidores (RS-485) ── USB-RS485 / gateway TCP ──> coletor ──> SQLite (futuro: SQL Server) ──> API FastAPI ──> telas web
-                                                    └── agregação 15 min (consumo pela diferença do totalizador)
+medidores em série (RS-485) ─> gateway RS485/TCP ─> switch ─> servidor: coletor ─> SQLite (futuro: SQL Server) ─> API ─> telas web
+                                                                          └── agregação 15 min (consumo pela diferença do totalizador)
 ```
+O servidor fala Modbus TCP com o gateway; cada medidor é endereçado pelo seu ID na rede RS-485.
 
 | Pasta | Conteúdo |
 |---|---|
@@ -19,7 +20,7 @@ Medidores (RS-485) ── USB-RS485 / gateway TCP ──> coletor ──> SQLite
 | `armazenamento/` | esquema SQLAlchemy, gravação (histórico só com INSERT), agregação de 15 min |
 | `calculo/` | consumo por totalizador: reset, rollover, lacuna (funções puras) |
 | `api/`, `web/` | API FastAPI e telas: Painel, Tendências, Energia 15 min, Comunicação |
-| `ferramentas/` | `varrer_serial` (descobrir porta, baud e ID) e `validar_campo` (Excel para conferir com o display) |
+| `ferramentas/` | `varrer_serial` (descobrir quais IDs respondem, via gateway TCP ou porta COM) e `validar_campo` (Excel para conferir com o display) |
 | `tests/` | `unit/`, `integracao/` e `simulador/` (escravos Modbus TCP com injeção de falhas) |
 | `config/` | `mapas/*.csv`, `dispositivos.simulador.yaml`, `dispositivos.exemplo.yaml`; `local/` fica fora do git |
 
@@ -34,7 +35,7 @@ python -m venv .venv
 
 ```powershell
 .venv\Scripts\python -m pytest                                    # todos os testes
-# terminal 1: escravos simulados (ID 1 = WEG MMW02, ID 2 = Schneider EM3261) em 127.0.0.1:5020
+# terminal 1: simula um gateway em 127.0.0.1:5020 com ID 1 = WEG MMW02 e ID 2 = Schneider EM3261 atrás dele
 .venv\Scripts\python -m tests.simulador --queda 120:45 --reset 600
 # terminal 2: coletor (use --debug para ver os bytes TX/RX e os registradores decodificados)
 .venv\Scripts\python -m coletor --config config\dispositivos.simulador.yaml
@@ -42,22 +43,24 @@ python -m venv .venv
 .venv\Scripts\python -m api --config config\dispositivos.simulador.yaml
 ```
 
-Opções do simulador: `--acelerar N` (totalizadores N vezes mais rápidos), `--queda INICIO:DURACAO` (fica sem responder),
+Opções do simulador: `--acelerar N` (totalizadores N vezes mais rápidos), `--queda INICIO:DURACAO` (gateway inteiro sem responder),
+`--queda-medidor ID:INICIO:DURACAO` (só um medidor fora; o gateway responde exceção 0B), `--sem-gateway`,
 `--reset T` (zera os totalizadores no instante T), `--estrito` (exceção 02 em endereço não mapeado), `--quadro rtu_over_tcp`.
 
 ## Fluxo principal (campo)
 
-1. Copie `config/dispositivos.exemplo.yaml` para `config/local/dispositivos.yaml` e preencha porta COM, baud, paridade, ID e mapa.
-2. Descubra a porta e confira a comunicação:
+1. Configure o gateway (IP fixo, modo Modbus TCP ou transparente, baud e paridade iguais aos dos medidores).
+2. Copie `config/dispositivos.exemplo.yaml` para `config/local/dispositivos.yaml` e preencha o IP do gateway e o ID e o mapa de cada medidor.
+3. Teste a rede e descubra quais IDs respondem através do gateway:
    ```powershell
-   .venv\Scripts\python -m ferramentas.varrer_serial --listar
-   .venv\Scripts\python -m ferramentas.varrer_serial --porta COM3 --mapa config\mapas\weg_mmw02.csv
+   ping 192.168.0.50
+   .venv\Scripts\python -m ferramentas.varrer_serial --host 192.168.0.50 --ids 1-20 --mapa config\mapas\weg_mmw02.csv --verboso
    ```
-3. Valide o mapa: gere a planilha, anote os valores do display e corrija escala ou word order no CSV. Marque `verificado = sim`.
+4. Valide o mapa: gere a planilha, anote os valores do display e corrija escala ou word order no CSV. Marque `verificado = sim`.
    ```powershell
    .venv\Scripts\python -m ferramentas.validar_campo --config config\local\dispositivos.yaml --dispositivo MED_01
    ```
-4. Inicie a coleta e as telas:
+5. Inicie a coleta e as telas:
    ```powershell
    .venv\Scripts\python -m coletor --config config\local\dispositivos.yaml
    .venv\Scripts\python -m api --config config\local\dispositivos.yaml
@@ -67,6 +70,7 @@ Todas as ferramentas usam só funções Modbus de leitura (FC 01–04).
 
 ## Pendências de campo
 
+- **Gateway:** modelo, IP, modo (Modbus TCP ou transparente) e número máximo de conexões TCP simultâneas.
 - **WEG MMW02:** conferir o parâmetro "Formato" (Short/Long). Os totalizadores de 64 bits (reg 12008…) têm escala `A_VERIFICAR` e ficam fora da coleta até serem comparados com o reg 304.
 - **Schneider EM3261:** confirmar a interface RS-485. Conferir a decodificação do FP de 4 quadrantes (`FLOAT32_4Q_PF`) contra a aba "Data Types" da Schneider.
-- Baud rate, paridade e ID Modbus reais.
+- Baud rate e paridade da rede RS-485 (configurados no gateway e nos medidores) e o ID Modbus de cada medidor.

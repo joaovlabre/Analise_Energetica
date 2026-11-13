@@ -17,7 +17,17 @@ log = logging.getLogger("coletor.transporte")
 
 
 class ErroComunicacao(Exception):
-    """Sem resposta, timeout, porta indisponível, conexão recusada."""
+    """Sem resposta, timeout, porta indisponível, conexão recusada, gateway sem caminho até o escravo."""
+
+
+# Exceções que indicam falha de comunicação (e não um endereço/função inválidos):
+# o dispositivo fica "sem comunicação" e é tentado de novo, sem desativar pontos.
+EXCECOES_TRANSITORIAS = {
+    0x05: "escravo ocupado processando (ACK)",
+    0x06: "escravo ocupado",
+    0x0A: "gateway sem caminho até o escravo",
+    0x0B: "medidor não respondeu ao gateway",
+}
 
 
 class ErroExcecaoModbus(Exception):
@@ -99,6 +109,9 @@ class ClienteModbus:
             raise ErroComunicacao(f"{self.barramento.nome} id {unidade}: {e}") from e
         if rr.isError():
             codigo = getattr(rr, "exception_code", 0) or 0
+            if codigo in EXCECOES_TRANSITORIAS:
+                # problema de caminho/disponibilidade (gateway ou escravo ocupado), não do endereço lido
+                raise ErroComunicacao(f"{self.barramento.nome} id {unidade}: {EXCECOES_TRANSITORIAS[codigo]} (exceção {codigo:02X})")
             raise ErroExcecaoModbus(codigo, f"id {unidade} FC{funcao:02d} @{endereco}+{quantidade}: exceção {codigo:02d}")
         if funcao in (1, 2):
             return [int(b) for b in rr.bits[:quantidade]]

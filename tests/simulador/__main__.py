@@ -3,9 +3,11 @@
 Exemplos:
   python -m tests.simulador
   python -m tests.simulador --porta 5020 --acelerar 60 --queda 120:45 --reset 300
+  python -m tests.simulador --queda-medidor 2:60:30      # medidor ID 2 fora por 30 s (gateway responde 0B)
   python -m tests.simulador --escravo 1:config/mapas/weg_mmw02.csv --estrito
 
-Padrão: escravo 1 = WEG MMW02, escravo 2 = Schneider EM3261, em 127.0.0.1:5020 (Modbus TCP).
+Padrão: simula um GATEWAY RS485/TCP em 127.0.0.1:5020 (Modbus TCP) com dois medidores em série
+atrás dele: ID 1 = WEG MMW02, ID 2 = Schneider EM3261.
 """
 from __future__ import annotations
 
@@ -30,6 +32,11 @@ def _par(txt: str) -> tuple[float, float]:
     return float(a), float(b)
 
 
+def _trio(txt: str) -> tuple[int, float, float]:
+    a, b, c = txt.split(":")
+    return int(a), float(b), float(c)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Simulador Modbus do SGE")
     ap.add_argument("--host", default="127.0.0.1")
@@ -38,7 +45,10 @@ def main() -> None:
     ap.add_argument("--escravo", action="append", help="ID:caminho_do_mapa.csv (pode repetir)")
     ap.add_argument("--acelerar", type=float, default=1.0, help="multiplica o crescimento dos totalizadores")
     ap.add_argument("--estrito", action="store_true", help="exceção 02 ao ler endereço não mapeado")
-    ap.add_argument("--queda", action="append", default=[], type=_par, help="INICIO_S:DURACAO_S sem responder")
+    ap.add_argument("--queda", action="append", default=[], type=_par, help="INICIO_S:DURACAO_S gateway inteiro sem responder")
+    ap.add_argument("--queda-medidor", action="append", default=[], type=_trio,
+                    help="ID:INICIO_S:DURACAO_S só um medidor fora (gateway responde exceção 0B)")
+    ap.add_argument("--sem-gateway", action="store_true", help="escravo ausente fica em silêncio (medidor com Ethernet nativa)")
     ap.add_argument("--reset", action="append", default=[], type=float, help="instante (s) para zerar totalizadores")
     args = ap.parse_args()
 
@@ -55,7 +65,8 @@ def main() -> None:
             )
         )
     servidor = ServidorSimulado(
-        escravos, host=args.host, porta=args.porta, quadro=args.quadro, falhas=Falhas(quedas=args.queda, resets=args.reset)
+        escravos, host=args.host, porta=args.porta, quadro=args.quadro, falhas=Falhas(quedas=args.queda, quedas_escravo=args.queda_medidor, resets=args.reset),
+        gateway=not args.sem_gateway,
     )
 
     async def rodar():

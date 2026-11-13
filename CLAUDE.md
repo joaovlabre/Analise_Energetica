@@ -58,7 +58,15 @@ Usuários: engenharia elétrica/manutenção (técnico), utilidades/caldeira, pr
 | MMW02 | WEG | RS-485 Modbus RTU | `config/mapas/weg_mmw02.csv` | Input registers (FC 04), base 0. Configurar o parâmetro "Formato" como **Short (16 bits)** ou adaptar o coletor (o padrão de fábrica é Long). Byte/word swap configuráveis, padrão "nenhum". Tabela de energia de 64 bits sem unidade no manual público: validar em campo. Tabela completa: pedir ao suporte WEG. |
 | GoLogic EM3261 (GLEM3261) | Schneider | RS-485 Modbus RTU **[A CONFIRMAR]** | `config/mapas/schneider_gologic_em3261.csv` | Holding registers (FC 03). Lista da Schneider em numeração base 1: endereço no protocolo = registrador − 1. Big-endian (ABCD). **Não tem demanda nem THD**: a demanda é calculada pelo sistema a partir da energia. Usar o acumulador **permanente** (3304), que não é zerado pelo IHM. |
 
-Conexão: fase inicial com **1 multimedidor ligado direto num conversor USB-RS485** (barramento `serial`). Depois os dados de campo chegam ao servidor por **Ethernet** (gateway Modbus TCP: barramento `tcp`, ou `rtu_over_tcp` se o gateway só repassar o quadro RTU). Trocar de um para o outro é só configuração.
+### Arquitetura de comunicação (decidida)
+```
+[medidores em série na rede RS-485] -> [gateway RS485/TCP] -> [switch] -> [servidor (coletor)]
+```
+- O servidor fala **Modbus TCP** com o gateway: barramento `tcp` (gateway convertendo TCP <-> RTU) ou `rtu_over_tcp` (gateway transparente). Um barramento por gateway; o `endereco_modbus` de cada medidor é o ID dele na rede RS-485 (Unit ID).
+- Baud, paridade e bits do lado serial são configurados **no gateway** e iguais em todos os medidores da rede.
+- O coletor mantém **uma conexão TCP por gateway** e faz um pedido por vez (a rede RS-485 é half-duplex). Ferramentas como `validar_campo` abrem outra conexão: confirmar quantas conexões simultâneas o gateway aceita.
+- Exceções **0A/0B** (gateway sem caminho / medidor não respondeu) e **05/06** (ocupado) contam como **falha de comunicação** do medidor, nunca como ponto inválido. Gateway inteiro fora = todos os medidores dele sem comunicação.
+- O conversor USB-RS485 (barramento `serial`) fica só como alternativa de bancada.
 
 Futuros: medidores de gás e vapor, relés de proteção, CLPs (dado de produção e pulsos), balanças/totalizadores.
 

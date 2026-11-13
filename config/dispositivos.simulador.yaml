@@ -32,8 +32,8 @@ agregacao:
   periodo_execucao_s: 60
 
 barramentos:
-  - nome: simulador
-    tipo: tcp                  # simulador fala Modbus TCP (use rtu_over_tcp com --quadro rtu_over_tcp)
+  - nome: simulador            # simula o gateway RS485/TCP com os dois medidores atrás dele
+    tipo: tcp                  # use rtu_over_tcp com --quadro rtu_over_tcp
     host: 127.0.0.1
     porta_tcp: 5020
     timeout_s: 0.5

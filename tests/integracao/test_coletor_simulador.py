@@ -159,3 +159,33 @@ async def test_validar_campo_gera_planilha(ambiente, tmp_path):
     arq = gerar_excel(resultados, tmp_path / "v.xlsx", {"Dispositivo": "WEG"})
     ws = load_workbook(arq).active
     assert any(c.value == "VALOR NO DISPLAY" for c in ws[3])
+
+
+async def test_gateway_medidor_fora_nao_desativa_pontos(ambiente):
+    """Arquitetura de campo: medidores em série -> gateway RS485/TCP. Um medidor cai, o gateway responde 0B."""
+    servidor, coletor, engine, _ = ambiente
+    weg, sch = coletor.dispositivos
+    await weg.ciclo()
+    await sch.ciclo()
+    servidor.escravos[2].fora_do_ar = True  # Schneider desligado; WEG segue respondendo pelo mesmo gateway
+    assert await sch.ciclo() is None
+    assert sch.estado.online is False
+    assert "0B" in sch.estado.ultimo_erro
+    assert not sch.estado.pontos_recusados  # não confundiu com endereço inválido
+    assert await weg.ciclo() and weg.estado.online is True
+    servidor.escravos[2].fora_do_ar = False
+    valores = await sch.ciclo()
+    assert valores and len(valores) == len(sch.pontos) and sch.estado.online is True
+    with engine.connect() as con:
+        tipos = con.execute(select(E.evento_comunicacao.c.tipo).where(
+            E.evento_comunicacao.c.dispositivo_id == sch.dispositivo_id).order_by(E.evento_comunicacao.c.id)).scalars().all()
+    assert tipos == ["falha", "retorno"]
+
+
+async def test_gateway_inteiro_fora(ambiente):
+    """Gateway ou switch sem resposta: todos os medidores atrás dele ficam sem comunicação."""
+    servidor, coletor, engine, _ = ambiente
+    servidor.fora_do_ar = True
+    for c in coletor.dispositivos:
+        assert await c.ciclo() is None
+        assert c.estado.online is False and not c.estado.pontos_recusados
