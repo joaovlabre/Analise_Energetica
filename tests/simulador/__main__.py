@@ -69,6 +69,8 @@ def main() -> None:
         asyncio.run(rodar())
     except KeyboardInterrupt:
         print("simulador encerrado")
+    except OSError as e:
+        raise SystemExit(f"não foi possível abrir {args.host}:{args.porta} ({e}). Outro simulador já está rodando?")
 
 
 if __name__ == "__main__":
