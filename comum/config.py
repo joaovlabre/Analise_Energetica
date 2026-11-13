@@ -31,6 +31,7 @@ class Barramento(BaseModel):
     timeout_s: float = 1.0
     retentativas: int = 2
     pausa_entre_pedidos_ms: int = 30
+    reconectar_apos_falhas: int = Field(default=3, ge=1)  # pedidos seguidos sem resposta antes de abrir nova conexão TCP
 
     @model_validator(mode="after")
     def _checar(self):
@@ -71,6 +72,7 @@ class Dispositivo(BaseModel):
 class Coleta(BaseModel):
     ciclo_base_s: float = 1.0
     reconexao_s: float = 10.0  # intervalo entre tentativas quando o dispositivo está sem comunicação
+    retentar_recusados_s: float = 600.0  # pontos recusados (exceção 02/03) voltam a ser tentados após esse tempo
     taxas: dict[str, TaxaGrupo]
     faixas: dict[str, Faixa] = Field(default_factory=dict)  # chave = prefixo da grandeza (ex.: "tensao_")
 

@@ -189,3 +189,23 @@ async def test_gateway_inteiro_fora(ambiente):
     for c in coletor.dispositivos:
         assert await c.ciclo() is None
         assert c.estado.online is False and not c.estado.pontos_recusados
+
+
+async def test_ponto_recusado_volta_apos_reconfiguracao(ambiente):
+    """Escravo com tabela menor recusa pontos (exceção 02); depois de reconfigurado, eles voltam a ser lidos."""
+    servidor, coletor, engine, cfg = ambiente
+    weg = coletor.dispositivos[0]
+    escravo = servidor.escravos[1]
+    escravo.estrito = True
+    tabela_completa = escravo.tabela
+    escravo.atualizar = lambda: None  # congela a tabela para o teste
+    escravo.tabela = {f: {a: v for a, v in regs.items() if a < 20} for f, regs in tabela_completa.items()}
+    await weg.ciclo()
+    assert weg.estado.pontos_recusados
+    eventos_antes = contar(engine, E.evento_comunicacao, E.evento_comunicacao.c.tipo == "excecao_modbus")
+    escravo.tabela = tabela_completa  # "usuário aumentou o número de registradores"
+    cfg.coleta.retentar_recusados_s = 0
+    valores = await weg.ciclo()
+    assert not weg.estado.pontos_recusados
+    assert len(valores) == len(weg.pontos)
+    assert contar(engine, E.evento_comunicacao, E.evento_comunicacao.c.tipo == "excecao_modbus") == eventos_antes

@@ -66,7 +66,7 @@ Opções do simulador: `--acelerar N` (totalizadores N vezes mais rápidos), `--
    .venv\Scripts\python -m api --config config\local\dispositivos.yaml
    ```
 
-Todas as ferramentas usam só funções Modbus de leitura (FC 01–04).
+O coletor e as ferramentas de campo usam só funções Modbus de leitura (FC 01–04). A escrita existe apenas na ponte de teste do Elipse (`tests/simulador/ponte_elipse.py`), que escreve no simulador.
 
 ## Pendências de campo
 

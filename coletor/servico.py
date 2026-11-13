@@ -42,6 +42,7 @@ class EstadoDispositivo:
     pedidos_falha: int = 0
     ultimo_erro: str | None = None
     pontos_recusados: set[str] = field(default_factory=set)
+    ts_primeira_recusa: float | None = None  # monotonic
 
 
 class ColetorDispositivo:
@@ -61,6 +62,7 @@ class ColetorDispositivo:
         self._divididos: dict[tuple[int, int, int], list[Bloco]] = {}
         self._ult_leitura: dict[str, float] = {}
         self._ult_gravacao: dict[str, float] = {}
+        self._recusas_notificadas: set[str] = set()
 
     # ------------------------------------------------------------------ leitura
     def blocos_para(self, grupos: list[str]) -> list[Bloco]:
@@ -102,9 +104,16 @@ class ColetorDispositivo:
         return saida
 
     def _recusar_ponto(self, p: Ponto, e: ErroExcecaoModbus) -> None:
+        if not self.estado.pontos_recusados:
+            self.estado.ts_primeira_recusa = time.monotonic()
         self.estado.pontos_recusados.add(p.grandeza)
         msg = f"{p.grandeza} (reg {p.endereco_manual}, FC{p.funcao:02d}) recusado: {e}"
-        log.warning("%s: %s — ponto desativado até reiniciar o coletor", self.cfg_disp.nome, msg)
+        if p.grandeza in self._recusas_notificadas:
+            log.debug("%s: %s (continua recusado)", self.cfg_disp.nome, msg)
+            return
+        self._recusas_notificadas.add(p.grandeza)
+        log.warning("%s: %s — ponto suspenso (nova tentativa em %.0f s ou no retorno da comunicação)",
+                    self.cfg_disp.nome, msg, self.cfg.coleta.retentar_recusados_s)
         if self.engine is not None:
             gravador.registrar_evento(self.engine, self.dispositivo_id, agora_utc(), "excecao_modbus", msg)
 
@@ -127,9 +136,20 @@ class ColetorDispositivo:
                     log.debug("%s %-32s regs=%s bruto=%r -> %r %s [%s]", self.cfg_disp.nome, p.grandeza,
                               " ".join(f"{r:04X}" for r in regs), bruto, valor, p.unidade, qual)
                 valores.append(ValorLido(p.grandeza, p.grupo, valor, p.unidade, qual))
+                if p.grandeza in self._recusas_notificadas:
+                    self._recusas_notificadas.discard(p.grandeza)
+                    log.info("%s: %s voltou a ser lido", self.cfg_disp.nome, p.grandeza)
         return valores
 
     # ------------------------------------------------------------------ ciclo
+    def liberar_recusados(self, motivo: str) -> None:
+        """Volta a tentar pontos recusados e blocos divididos (o escravo pode ter sido reconfigurado)."""
+        if self.estado.pontos_recusados or self._divididos:
+            log.info("%s: tentando de novo %d ponto(s) recusado(s) (%s)", self.cfg_disp.nome, len(self.estado.pontos_recusados), motivo)
+        self.estado.pontos_recusados.clear()
+        self.estado.ts_primeira_recusa = None
+        self._divididos.clear()
+
     def grupos_vencidos(self, agora: float) -> list[str]:
         taxas = self.cfg.coleta.taxas
         return [g for g in self.cfg_disp.grupos if agora - self._ult_leitura.get(g, -1e18) >= taxas[g].leitura_s]
@@ -143,6 +163,12 @@ class ColetorDispositivo:
         if not grupos:
             return None
         self.estado.ultima_tentativa = agora_mono
+        if self.estado.ts_primeira_recusa is not None and agora_mono - self.estado.ts_primeira_recusa >= self.cfg.coleta.retentar_recusados_s:
+            self.liberar_recusados("tempo de nova tentativa")
+            self._ult_leitura.clear()
+            grupos = self.grupos_vencidos(agora_mono)
+        if self.estado.online is False:
+            self.liberar_recusados("tentativa após falha de comunicação")
         ts = agora_utc()
         try:
             valores = await self.ler_grupos(grupos)

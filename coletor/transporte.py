@@ -1,7 +1,7 @@
 """Cliente Modbus (pymodbus async) — SOMENTE LEITURA.
 
 Esta classe expõe apenas as funções 01, 02, 03 e 04. Funções de escrita (05, 06, 15, 16)
-não existem aqui de propósito (regra inviolável do CLAUDE.md).
+não estão implementadas no coletor (escrita, se necessária, será implementada à parte).
 """
 from __future__ import annotations
 
@@ -50,6 +50,7 @@ def _trace(nome: str):
 class ClienteModbus:
     def __init__(self, barramento: Barramento):
         self.barramento = barramento
+        self._falhas_seguidas = 0
         b = barramento
         comum = dict(
             timeout=b.timeout_s,
@@ -104,11 +105,16 @@ class ClienteModbus:
         try:
             rr = await metodo(endereco, count=quantidade, device_id=unidade)
         except (ModbusException, OSError, TimeoutError) as e:
-            # Sem resposta: fecha a conexão para que a próxima tentativa abra uma nova.
-            # Gateways (e o Elipse Modbus Simulator) podem travar a sessão TCP; reconectar resolve.
+            # Sem resposta: após N falhas seguidas, fecha a conexão para a próxima tentativa abrir uma nova
+            # (gateways podem travar a sessão TCP). Reconectar a cada falha é ruim para escravos que não
+            # liberam conexões antigas (ex.: Elipse Modbus Simulator).
             # Exceções 0A/0B do gateway NÃO passam por aqui: a sessão está boa, só o medidor não respondeu.
-            self.fechar()
+            self._falhas_seguidas += 1
+            if self._falhas_seguidas >= self.barramento.reconectar_apos_falhas:
+                self._falhas_seguidas = 0
+                self.fechar()
             raise ErroComunicacao(f"{self.barramento.nome} id {unidade}: {e}") from e
+        self._falhas_seguidas = 0
         if rr.isError():
             codigo = getattr(rr, "exception_code", 0) or 0
             if codigo in EXCECOES_TRANSITORIAS:

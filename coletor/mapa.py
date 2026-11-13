@@ -10,7 +10,7 @@ from pathlib import Path
 
 from coletor.decodificador import TAMANHO, WORD_ORDERS
 
-FUNCOES_LEITURA = {1, 2, 3, 4}  # somente leitura em campo (regra inviolável)
+FUNCOES_LEITURA = {1, 2, 3, 4}  # o mapa descreve pontos de leitura do coletor
 GRUPOS_VALIDOS = {"instantaneo", "energia", "demanda", "qualidade", "status", "config"}
 MARCA_A_VERIFICAR = "A_VERIFICAR"
 

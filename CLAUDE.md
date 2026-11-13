@@ -19,7 +19,6 @@ Usuários: engenharia elétrica/manutenção (técnico), utilidades/caldeira, pr
 
 ## 2. Regras invioláveis
 
-- **Somente leitura em campo.** O coletor usa apenas funções Modbus de leitura (FC 01, 02, 03, 04). Escrita (FC 05, 06, 15, 16) **não deve ser implementada** sem pedido explícito do usuário, e nunca em relés de proteção. Os mapas podem conter registradores de configuração, mas eles servem só para conferência.
 - **Nunca inventar endereço de registrador, escala, tipo de dado ou fator de conversão.** Use sempre os mapas em `config/mapas/` e os fatores em `config/fatores_conversao.yaml`. Se um dado não estiver lá, pergunte ou consulte o manual do fabricante em `docs/manuais/`.
 - **Consumo vem de totalizadores acumulados** (kWh, m³, kg), nunca da integração de grandezas instantâneas (kW, m³/h, kg/h). Consumo de um período = diferença entre leituras do totalizador. Integrar vazão só é aceito como último recurso, com qualidade `estimado`.
 - **Preferir totalizadores de 64 bits (inteiros).** FLOAT32 tem só cerca de 7 dígitos significativos: com acumulados altos, o incremento de 15 min some no arredondamento. Use FLOAT32 apenas se o equipamento não oferecer alternativa.

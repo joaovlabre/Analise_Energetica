@@ -29,10 +29,12 @@ agregacao:
   periodo_execucao_s: 60
 
 barramentos:
+  # O coletor fala com a PONTE (python -m tests.simulador.ponte_elipse), que mantém uma única
+  # conexão com o Elipse (502) e incrementa a energia. Sem a ponte, use porta_tcp: 502.
   - nome: elipse
-    tipo: tcp            # use rtu_over_tcp se o simulador estiver em "Protocol = Modbus RTU"
+    tipo: tcp
     host: 127.0.0.1
-    porta_tcp: 502
+    porta_tcp: 5502
     timeout_s: 1.0
     retentativas: 1
     pausa_entre_pedidos_ms: 0
