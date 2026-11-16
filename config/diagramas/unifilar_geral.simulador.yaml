@@ -1,4 +1,6 @@
-# Unifilar geral (FLUXO DE TESTES). Valores desconhecidos ficam vazios e aparecem como "a definir".
+# Unifilar geral (FLUXO DE TESTES). Padrão: a grandeza do medidor aparece em número ao lado do ícone;
+# clicar no ícone abre todas as medições do aparelho.
+# Valores desconhecidos ficam vazios e aparecem como "a definir".
 slug: unifilar-geral
 nome: Unifilar geral 13,8 kV
 descricao: Barra geral de 13,8 kV com os transformadores da planta
@@ -16,7 +18,6 @@ transformadores:
       icone: schneider_em3261
       grandeza: potencia_ativa_total
       unidade_exibicao: W
-      posicao_valor: display      # valor no visor do ícone
   - nome: TR-02
     potencia_kva: 1000
     tensao_primaria_kv: 13.8
@@ -26,7 +27,6 @@ transformadores:
       icone: weg_mmw02
       grandeza: potencia_ativa_total
       unidade_exibicao: W
-      posicao_valor: lateral      # valor ao lado do ícone
   # potência e tensão secundária ainda a definir
   - nome: TR-03
     tensao_primaria_kv: 13.8

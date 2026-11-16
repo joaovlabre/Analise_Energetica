@@ -31,9 +31,7 @@ const ICONES = {
       g.appendChild(texto(x + 5, 27.5, `L${i + 1}`, { "font-size": 5.5, fill: "#7a8288" }));
     });
     g.appendChild(el("rect", { x: 10, y: 34, width: 90, height: 34, rx: 2, fill: "#c4d6e2", stroke: "#7d8f99", "stroke-width": 1.2 }));
-    g.appendChild(el("text", { x: 96, y: 56, "font-size": 15, "font-family": "Consolas, monospace", "text-anchor": "end", fill: "#1d2a33", class: "visor-valor" }, ["—"]));
-    g.appendChild(el("text", { x: 96, y: 65, "font-size": 8, "text-anchor": "end", fill: "#3c4a53", class: "visor-unidade" }, [""]));
-    g.appendChild(texto(14, 43, "P total", { "font-size": 6, fill: "#3c4a53" }));
+    [41, 50, 59].forEach((y, i) => g.appendChild(el("rect", { x: 16, y, width: [60, 70, 48][i], height: 3, fill: "#5d7180", opacity: 0.75 })));
     [32, 48, 64, 80].forEach(x => g.appendChild(el("circle", { cx: x, cy: 84, r: 5.5, fill: "#f3f4f5", stroke: "#8e979d", "stroke-width": 1 })));
     return { largura: 110, altura: 104 };
   },
@@ -57,8 +55,7 @@ const ICONES = {
   generico(g) {
     g.appendChild(el("rect", { x: 0, y: 0, width: 90, height: 90, rx: 6, fill: "#eceff1", stroke: "#90a4ae" }));
     g.appendChild(el("rect", { x: 10, y: 14, width: 70, height: 30, rx: 2, fill: "#cfd8dc" }));
-    g.appendChild(el("text", { x: 76, y: 35, "font-size": 13, "text-anchor": "end", fill: "#263238", class: "visor-valor" }, ["—"]));
-    g.appendChild(el("text", { x: 76, y: 42, "font-size": 6, "text-anchor": "end", fill: "#263238", class: "visor-unidade" }, [""]));
+    [22, 30].forEach(y => g.appendChild(el("rect", { x: 16, y, width: 50, height: 3, fill: "#78909c" })));
     return { largura: 90, altura: 90 };
   },
 };
@@ -119,14 +116,15 @@ function desenharUnifilar(svg, d) {
       gm.appendChild(el("text", { x: tam.largura / 2, y: tam.altura + 34, class: "estado", "text-anchor": "middle" }, [""]));
       const dica = el("title", {}, [m.dispositivo]);
       gm.appendChild(dica);
-      let lateral = null;
-      if (m.posicao_valor === "lateral") {
-        lateral = el("g", { transform: `translate(${tam.largura + 12} ${tam.altura / 2 - 26})` });
-        lateral.appendChild(el("rect", { x: 0, y: 0, width: 126, height: 52, rx: 6, class: "caixa-valor" }));
-        lateral.appendChild(texto(10, 16, "Potência ativa", { class: "rotulo pequeno" }));
-        lateral.appendChild(el("text", { x: 10, y: 40, class: "valor-lateral" }, ["—"]));
-        gm.appendChild(lateral);
-      }
+      const lateral = el("g", { transform: `translate(${tam.largura + 12} ${tam.altura / 2 - 26})` });
+      lateral.appendChild(el("rect", { x: 0, y: 0, width: 126, height: 52, rx: 6, class: "caixa-valor" }));
+      lateral.appendChild(texto(10, 16, SGE.rotulo(m.grandeza), { class: "rotulo pequeno" }));
+      lateral.appendChild(el("text", { x: 10, y: 40, class: "valor-lateral" }, ["—"]));
+      gm.appendChild(lateral);
+      gm.setAttribute("tabindex", "0");
+      gm.setAttribute("role", "button");
+      gm.addEventListener("click", () => abrirDetalhe(m));
+      gm.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirDetalhe(m); } });
       g.appendChild(gm);
       medidores.push({ m, gm, lateral, dica });
     }
@@ -153,14 +151,44 @@ function atualizarMedidores(medidores, vivo) {
     }
     const estado = online === false ? "sem comunicação" : (ruim ? `qualidade: ${lido.qualidade}` : (lido ? SGE.dataHora(lido.ts).split(" ")[1] || "" : "sem leitura"));
     gm.querySelector(".estado").textContent = estado;
-    const visor = gm.querySelector(".visor-valor");
-    if (m.posicao_valor === "display" && visor) {
-      visor.textContent = txt;
-      gm.querySelector(".visor-unidade").textContent = unid;
-    }
-    if (lateral) lateral.querySelector(".valor-lateral").textContent = `${txt} ${unid}`.trim();
-    dica.textContent = `${m.dispositivo} · ${m.grandeza}: ${txt} ${unid}` + (lido ? ` · lido em ${SGE.dataHora(lido.ts)}` : "");
+    lateral.querySelector(".valor-lateral").textContent = `${txt} ${unid}`.trim();
+    dica.textContent = `${m.dispositivo} · ${SGE.rotulo(m.grandeza)}: ${txt} ${unid}` + (lido ? ` · lido em ${SGE.dataHora(lido.ts)}` : "") + "\nClique para ver todas as medições";
   }
+}
+
+// ---------------------------------------------------------------- janela de medições do medidor
+let detalheTimer = null;
+
+async function abrirDetalhe(m) {
+  const dlg = document.getElementById("detalhe");
+  if (!dlg || !m.dispositivo_id) return;
+  dlg.querySelector(".det-titulo").textContent = m.dispositivo;
+  dlg.querySelector(".det-estado").innerHTML = "";
+  dlg.querySelector(".det-tiles").innerHTML = '<div class="vazio">Carregando…</div>';
+  dlg.querySelector(".det-tabela").innerHTML = "";
+  if (!dlg.open) dlg.showModal();
+  clearInterval(detalheTimer);
+  await preencherDetalhe(dlg, m.dispositivo_id);
+  detalheTimer = setInterval(() => dlg.open ? preencherDetalhe(dlg, m.dispositivo_id) : clearInterval(detalheTimer), 2000);
+}
+
+async function preencherDetalhe(dlg, id) {
+  try {
+    const [lista, r] = await Promise.all([SGE.get("/api/dispositivos"), SGE.get(`/api/dispositivos/${id}/atual`)]);
+    const d = lista.find(x => x.id === id) || {};
+    dlg.querySelector(".det-titulo").textContent = `${d.nome || ""} · ${d.modelo || ""}${d.local ? " · " + d.local : ""}`;
+    dlg.querySelector(".det-estado").innerHTML = `${SGE.selo(d.online)} <span class="det-nota">última leitura ok: ${SGE.dataHora(d.ultima_ok)}${d.ultimo_erro ? " · " + d.ultimo_erro : ""}</span>`;
+    const porNome = Object.fromEntries(r.valores.map(v => [v.grandeza, v]));
+    dlg.querySelector(".det-tiles").innerHTML = r.destaques.filter(g => porNome[g]).map(g => {
+      const v = porNome[g], ruim = v.qualidade !== "ok";
+      return `<div class="tile"><div class="rotulo">${SGE.rotulo(g)}</div>
+        <div class="valor ${ruim ? "qual-ruim" : ""}" title="qualidade: ${v.qualidade}">${SGE.num(v.valor, SGE.casas(v.unidade, g))}<span class="unid">${v.unidade}</span></div>
+        ${ruim ? `<div class="selo aviso">${v.qualidade}</div>` : ""}</div>`;
+    }).join("") || '<div class="vazio">Sem leituras ainda.</div>';
+    dlg.querySelector(".det-tabela").innerHTML = r.valores.map(v => `<tr>
+        <td>${v.grupo}</td><td>${SGE.rotulo(v.grandeza)}</td><td class="num">${SGE.num(v.valor, SGE.casas(v.unidade, v.grandeza))}</td>
+        <td>${v.unidade}</td><td class="${v.qualidade === "ok" ? "qual-ok" : "qual-ruim"}">${v.qualidade}</td><td>${SGE.dataHora(v.ts)}</td></tr>`).join("");
+  } catch (e) { console.error(e); }
 }
 
 async function iniciarDiagrama(svg, slug) {

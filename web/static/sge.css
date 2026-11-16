@@ -131,3 +131,17 @@ details summary { cursor: pointer; color: var(--text-secondary); margin-top: 8px
 .unifilar .medidor.qualidade-ruim .valor-lateral { fill: var(--aviso); }
 .legenda { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
 .legenda .nota { color: var(--text-muted); font-size: 12px; }
+
+.unifilar .medidor { cursor: pointer; }
+.unifilar .medidor:hover .moldura, .unifilar .medidor:focus .moldura { stroke-width: 4; filter: drop-shadow(0 0 3px rgba(0,0,0,.35)); }
+.unifilar .medidor:focus { outline: none; }
+.detalhe { width: min(1100px, 94vw); max-height: 88vh; border: 1px solid var(--borda); border-radius: 12px; padding: 18px 20px;
+  background: var(--surface-1); color: var(--text-primary); }
+.detalhe::backdrop { background: rgba(0, 0, 0, 0.45); }
+.det-cabecalho { display: flex; align-items: center; gap: 12px; border-bottom: 3px solid var(--marca); padding-bottom: 8px; margin-bottom: 10px; }
+.det-cabecalho h2 { margin: 0; font-size: 17px; }
+.det-fechar { margin-left: auto; font-size: 16px; padding: 2px 10px; }
+.det-estado { margin-bottom: 12px; }
+.det-nota { color: var(--text-muted); margin-left: 8px; }
+.detalhe h3 { font-size: 14px; margin: 16px 0 6px; }
+.det-rolagem { max-height: 40vh; overflow: auto; }

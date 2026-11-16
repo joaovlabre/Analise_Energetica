@@ -18,8 +18,7 @@ class MedidorDiagrama(BaseModel):
     dispositivo: str  # nome do dispositivo em dispositivos.yaml
     icone: Literal["schneider_em3261", "weg_mmw02", "generico"] = "generico"
     grandeza: str = "potencia_ativa_total"
-    unidade_exibicao: str | None = None  # ex.: W (converte de kW só na tela)
-    posicao_valor: Literal["display", "lateral"] = "lateral"
+    unidade_exibicao: str | None = None  # ex.: W (converte de kW só na tela); o valor fica sempre ao lado do ícone
 
 
 class Transformador(BaseModel):

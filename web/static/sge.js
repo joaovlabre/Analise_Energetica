@@ -1,5 +1,12 @@
 // Utilitários comuns das telas do SGE
 const SGE = {
+  ROTULOS: {
+    potencia_ativa_total: "Potência ativa", potencia_reativa_total: "Potência reativa", potencia_aparente_total: "Potência aparente",
+    fp_total: "Fator de potência", tensao_ff_media: "Tensão F-F média", tensao_fn_media: "Tensão F-N média",
+    corrente_media: "Corrente média", frequencia: "Frequência", energia_ativa_importada: "Energia ativa (totalizador)",
+    energia_reativa_importada: "Energia reativa (totalizador)",
+  },
+  rotulo(g) { return SGE.ROTULOS[g] || g; },
   async get(url) {
     const r = await fetch(url);
     if (!r.ok) throw new Error(`${r.status} ${url}`);

@@ -7,10 +7,25 @@
     <span class="selo ok">Online</span>
     <span class="selo falha">Sem comunicação</span>
     <span class="selo aviso">Qualidade diferente de ok</span>
-    <span class="nota">Valores atualizados a cada 2 s</span>
+    <span class="nota">Valores atualizados a cada 2 s · clique num medidor para ver todas as medições</span>
   </div>
 </div>
+<dialog id="detalhe" class="detalhe">
+  <div class="det-cabecalho">
+    <h2 class="det-titulo">—</h2>
+    <button class="det-fechar" onclick="this.closest('dialog').close()" aria-label="Fechar">✕</button>
+  </div>
+  <div class="det-estado"></div>
+  <div class="det-tiles tiles"></div>
+  <h3>Todas as grandezas</h3>
+  <div class="det-rolagem">
+    <table>
+      <thead><tr><th>Grupo</th><th>Grandeza</th><th style="text-align:right">Valor</th><th>Unidade</th><th>Qualidade</th><th>Lido em</th></tr></thead>
+      <tbody class="det-tabela"></tbody>
+    </table>
+  </div>
+</dialog>
 <style>main { max-width: none; }</style>
-<script src="/static/diagrama.js?v=2"></script>
+<script src="/static/diagrama.js?v=3"></script>
 <script>iniciarDiagrama(document.getElementById("unifilar"), {{ diagrama.slug | tojson }});</script>
 {% endblock %}
