@@ -1,13 +1,14 @@
 :root {
   color-scheme: light;
-  --surface-0: #f3f3f1;
+  --surface-0: #f2f5f3;
   --surface-1: #fcfcfb;
   --borda: #deddd8;
   --text-primary: #0b0b0b;
   --text-secondary: #52514e;
   --text-muted: #7a7974;
-  --series-1: #2a78d6;
-  --grid: #e8e7e3;
+  --series-1: #016f45;  /* verde Agronorte */
+  --series-2: #00a651;
+  --grid: #e2e9e5;
   --ok: #1a7f37;
   --aviso: #9a6700;
   --critico: #c62828;
@@ -21,7 +22,8 @@
     --text-primary: #f0efec;
     --text-secondary: #c3c2b7;
     --text-muted: #8f8e86;
-    --series-1: #3987e5;
+    --series-1: #00a651;
+    --series-2: #5cc98a;
     --grid: #2a2a27;
     --ok: #4ac26b;
     --aviso: #d4a72c;
@@ -67,25 +69,29 @@ td.num { text-align: right; }
 details summary { cursor: pointer; color: var(--text-secondary); margin-top: 8px; }
 
 /* ---------- shell ---------- */
-:root { --marca: #1f6b3a; --marca-texto: #ffffff; --ponta: rgba(198, 40, 40, 0.08); }
-@media (prefers-color-scheme: dark) { :root { --marca: #17532d; --ponta: rgba(244, 112, 103, 0.10); } }
-.barra { display: flex; align-items: center; gap: 24px; padding: 10px 20px; background: var(--marca); color: var(--marca-texto); }
-.barra .marca span { color: rgba(255, 255, 255, 0.8); }
+/* cores da logo Agronorte: verde escuro #016F45, verde claro #00A651, branco */
+:root { --marca: #016f45; --marca-clara: #00a651; --marca-texto: #ffffff; --ponta: rgba(198, 40, 40, 0.08); }
+@media (prefers-color-scheme: dark) { :root { --ponta: rgba(244, 112, 103, 0.10); } }
+.barra { display: flex; align-items: center; gap: 18px; padding: 8px 20px; background: #ffffff; color: var(--marca); border-bottom: 3px solid var(--marca-clara); color-scheme: light; }
+.barra .logo { height: 34px; display: block; }
+.barra .sistema { border-left: 2px solid #dfe8e3; padding-left: 16px; line-height: 1.15; }
+.barra .sistema b { display: block; font-size: 17px; color: var(--marca); }
+.barra .sistema span { font-size: 12px; color: #4d6b5d; }
 .barra-direita { margin-left: auto; display: flex; align-items: center; gap: 18px; }
-.barra .relogio { color: rgba(255, 255, 255, 0.85); }
-.usuario { padding: 3px 10px; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 99px; font-size: 12px; }
+.barra .relogio { color: #34503f; }
+.usuario { padding: 3px 10px; border: 1px solid var(--marca); color: var(--marca); border-radius: 99px; font-size: 12px; }
 .alarmes { display: flex; gap: 6px; }
 .alarme { min-width: 26px; text-align: center; font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 4px; color: #fff; }
 .alarme.alta { background: #c62828; } .alarme.media { background: #e08a00; } .alarme.baixa { background: #2a78d6; }
-.alarme.zero { opacity: 0.45; }
-.menu { display: flex; gap: 4px; padding: 0 20px; background: var(--surface-1); border-bottom: 1px solid var(--borda); flex-wrap: wrap; }
-.menu a { color: var(--text-secondary); text-decoration: none; padding: 10px 12px; border-bottom: 3px solid transparent; }
-.menu a:hover { color: var(--text-primary); }
-.menu a.ativo { color: var(--text-primary); border-bottom-color: var(--marca); font-weight: 600; }
+.alarme.zero { opacity: 0.35; }
+.menu { display: flex; gap: 4px; padding: 0 20px; background: var(--marca); flex-wrap: wrap; }
+.menu a { color: rgba(255, 255, 255, 0.82); text-decoration: none; padding: 10px 14px; border-bottom: 3px solid transparent; }
+.menu a:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.menu a.ativo { color: #fff; border-bottom-color: var(--marca-clara); font-weight: 600; }
 .subtitulo { max-width: 1400px; margin: 14px auto 0; padding: 0 20px; color: var(--text-secondary); }
 .subtitulo a { color: var(--text-secondary); }
 .lista-paineis { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-.painel-link { text-decoration: none; color: inherit; border-top: 4px solid var(--marca); }
+.painel-link { text-decoration: none; color: inherit; border-top: 4px solid var(--marca-clara); }
 .painel-link:hover { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); }
 .painel-link p { color: var(--text-secondary); margin: 0; }
 
@@ -96,7 +102,8 @@ details summary { cursor: pointer; color: var(--text-secondary); margin-top: 8px
 .kpi .valor { font-size: 34px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 6px; }
 .kpi .unid { font-size: 15px; color: var(--text-muted); margin-left: 6px; font-weight: 400; }
 .kpi .nota { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
-.kpi.destaque { border-color: var(--marca); box-shadow: inset 0 0 0 1px var(--marca); }
+.kpi.destaque { border-color: var(--marca-clara); box-shadow: inset 0 0 0 1px var(--marca-clara); }
+.kpi.destaque .valor { color: var(--series-1); }
 .selos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .grade-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 16px; }
 .grafico.medio { height: 320px; }
@@ -150,7 +157,7 @@ details summary { cursor: pointer; color: var(--text-secondary); margin-top: 8px
 dialog.pme { width: min(1280px, 97vw); max-height: 94vh; padding: 0; border: 1px solid #b8b8b8; border-radius: 6px;
   background: #f1f1f1; color: #111; color-scheme: light; font-family: Verdana, "Segoe UI", sans-serif; font-size: 13px; }
 dialog.pme::backdrop { background: rgba(0, 0, 0, 0.5); }
-.pme-cabecalho { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--marca); color: #fff; }
+.pme-cabecalho { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--marca); color: #fff; border-bottom: 3px solid var(--marca-clara); }
 .pme-cabecalho h2 { margin: 0; font-size: 16px; }
 .pme-estado { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .pme-estado .selo { background: #fff; }
@@ -174,7 +181,7 @@ dialog.pme::backdrop { background: rgba(0, 0, 0, 0.5); }
 dialog.pme.offline .pme-caixa text, dialog.pme.offline .pme-form b, dialog.pme.offline .pme-tabela td { color: #9a9a9a; fill: #9a9a9a; }
 .pme-grade { display: grid; grid-template-columns: 1fr 1fr 190px; gap: 12px; align-items: start; }
 .pme-secao { background: #f1f1f1; border: 1px solid #d6d6d6; border-radius: 10px; padding: 0 14px 14px; }
-.pme-secao h3 { color: #1b7d1b; text-align: center; font-size: 17px; margin: 0 -14px 12px; padding: 8px 0; border-bottom: 1px solid #d6d6d6; }
+.pme-secao h3 { color: var(--marca); text-align: center; font-size: 17px; margin: 0 -14px 12px; padding: 8px 0; border-bottom: 1px solid #d6d6d6; }
 .pme-largo { grid-column: 1 / span 2; }
 .pme-form, .pme-thd { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; align-items: center; }
 .pme-thd { grid-template-columns: auto 110px auto 110px; justify-content: center; }
@@ -192,7 +199,7 @@ dialog.pme.offline .pme-caixa text, dialog.pme.offline .pme-form b, dialog.pme.o
 .pme-tabela td.nd { color: #9a9a9a; }
 .pme-limites th, .pme-limites td { text-align: left; }
 .pme-limites td.num { text-align: right; }
-.pme-sit.ok { background: #079a07; color: #000; text-align: center; }
+.pme-sit.ok { background: var(--marca-clara); color: #fff; text-align: center; }
 .pme-sit.alarme { background: #d32f2f; color: #fff; text-align: center; }
 .pme-sit.neutro { background: #bdbdbd; text-align: center; }
 .pme-links { display: flex; flex-direction: column; align-items: center; gap: 14px; }

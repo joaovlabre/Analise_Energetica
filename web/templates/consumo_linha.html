@@ -96,7 +96,7 @@ async function carregar() {
   document.getElementById("k-demanda").innerHTML = valorUnid(r.demanda_max_kw, 1, "kW");
   document.getElementById("n-demanda").textContent = r.demanda_max_em ? `em ${SGE.dataHora(r.demanda_max_em)}` : "";
 
-  const azul = SGE.cor("--series-1"), verde = SGE.cor("--ok"), txt = SGE.cor("--text-secondary"), grid = SGE.cor("--grid");
+  const azul = SGE.cor("--series-1"), verde = SGE.cor("--text-primary"), txt = SGE.cor("--text-secondary"), grid = SGE.cor("--grid");
   const dias = r.dias;
   if (gDias) gDias.destroy();
   gDias = new Chart(document.getElementById("g-dias"), {
