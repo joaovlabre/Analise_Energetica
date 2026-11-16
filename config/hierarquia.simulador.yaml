@@ -1,0 +1,9 @@
+# Hierarquia do FLUXO DE TESTES: linhas de produção -> medidores.
+# fator = parcela do consumo do medidor atribuída à linha (1 = medidor exclusivo da linha).
+linhas:
+  - nome: Linha 1
+    descricao: Linha de ração alimentada pelo medidor Schneider (simulada)
+    eletricidade:
+      - dispositivo: SIM_SCH_EM3261
+        grandeza: energia_ativa_importada
+        fator: 1.0

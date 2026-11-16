@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="filtros">
+  <label>Linha <select id="linha"></select></label>
+  <label>Período
+    <select id="periodo">
+      <option value="mes_anterior" selected>Mês anterior</option>
+      <option value="este_mes">Este mês</option>
+      <option value="ontem">Ontem</option>
+      <option value="hoje">Hoje</option>
+      <option value="7d">Últimos 7 dias</option>
+      <option value="30d">Últimos 30 dias</option>
+      <option value="personalizado">Personalizado</option>
+    </select></label>
+  <label class="pers" hidden>De <input type="date" id="inicio"></label>
+  <label class="pers" hidden>Até <input type="date" id="fim"></label>
+  <button id="atualizar">Atualizar</button>
+</div>
+
+<div class="selos" id="selos"></div>
+
+<div class="kpis">
+  <div class="kpi"><div class="rotulo">Energia elétrica consumida</div><div class="valor" id="k-energia">—</div><div class="nota" id="n-energia"></div></div>
+  <div class="kpi"><div class="rotulo">Ração produzida</div><div class="valor" id="k-producao">—</div><div class="nota" id="n-producao"></div></div>
+  <div class="kpi destaque"><div class="rotulo">Consumo específico</div><div class="valor" id="k-especifico">—</div><div class="nota">energia ÷ ração produzida</div></div>
+  <div class="kpi"><div class="rotulo">Demanda máxima (média de 15 min)</div><div class="valor" id="k-demanda">—</div><div class="nota" id="n-demanda"></div></div>
+</div>
+
+<div class="grade-2">
+  <div class="cartao">
+    <h2>Energia e consumo específico por dia</h2>
+    <div class="grafico medio"><canvas id="g-dias"></canvas></div>
+  </div>
+  <div class="cartao">
+    <h2>Perfil médio de demanda por horário <span class="selo falha" style="margin-left:8px">ponta 18h–21h</span></h2>
+    <div class="grafico medio"><canvas id="g-perfil"></canvas></div>
+  </div>
+</div>
+
+<div class="cartao">
+  <h2>Resumo diário</h2>
+  <table>
+    <thead><tr><th>Dia</th><th style="text-align:right">Energia (kWh)</th><th style="text-align:right">Ração (t)</th><th style="text-align:right">kWh/t</th><th style="text-align:right">Intervalos</th></tr></thead>
+    <tbody id="tabela"></tbody>
+    <tfoot id="rodape"></tfoot>
+  </table>
+</div>
+
+<script>
+const elLinha = document.getElementById("linha"), elPer = document.getElementById("periodo");
+const elIni = document.getElementById("inicio"), elFim = document.getElementById("fim");
+let gDias = null, gPerfil = null;
+
+const diaCurto = iso => { const [a, m, d] = iso.split("-"); return `${d}/${m}`; };
+const diaSemana = iso => new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short" });
+const valorUnid = (v, casas, unid) => v === null || v === undefined ? "—" : `${SGE.num(v, casas)}<span class="unid">${unid}</span>`;
+
+// faixa do horário de ponta no gráfico de perfil
+const faixaPonta = {
+  id: "faixaPonta",
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales: { x } } = chart;
+    const labels = chart.data.labels, i0 = labels.indexOf("18:00"), i1 = labels.indexOf("20:45");
+    if (i0 < 0 || i1 < 0) return;
+    const meio = (x.getPixelForValue(1) - x.getPixelForValue(0)) / 2;
+    ctx.save(); ctx.fillStyle = SGE.cor("--ponta");
+    ctx.fillRect(x.getPixelForValue(i0) - meio, chartArea.top, x.getPixelForValue(i1) - x.getPixelForValue(i0) + 2 * meio, chartArea.bottom - chartArea.top);
+    ctx.restore();
+  },
+};
+
+async function carregar() {
+  if (!elLinha.value) return;
+  const q = new URLSearchParams({ linha: elLinha.value, periodo: elPer.value });
+  if (elPer.value === "personalizado") {
+    if (!elIni.value || !elFim.value) return;
+    q.set("inicio", elIni.value); q.set("fim", elFim.value);
+  }
+  const r = await SGE.get(`/api/consumo_especifico?${q}`);
+
+  const selos = [];
+  if (r.simulado) selos.push('<span class="selo aviso">Dados simulados</span>');
+  if (r.intervalos_estimados) selos.push(`<span class="selo aviso">${r.intervalos_estimados} intervalo(s) estimado(s)</span>`);
+  if (r.cobertura !== null && r.cobertura < 0.999) selos.push(`<span class="selo aviso">cobertura de medição ${SGE.num(r.cobertura * 100, 1)}%</span>`);
+  const dataLocal = ms => new Date(ms).toLocaleDateString("pt-BR", { timeZone: "America/Araguaina" });
+  selos.push(`<span class="selo neutro">${dataLocal(Date.parse(r.inicio))} a ${dataLocal(Date.parse(r.fim) - 1000)}</span>`);
+  selos.push(`<span class="selo neutro">medidores: ${r.medidores.map(m => m.dispositivo + (m.fator !== 1 ? ` (${SGE.num(m.fator * 100, 0)}%)` : "")).join(", ")}</span>`);
+  document.getElementById("selos").innerHTML = selos.join("");
+  document.getElementById("selos").title = r.motivos.join("\n");
+
+  document.getElementById("k-energia").innerHTML = valorUnid(r.energia, 0, r.unidade);
+  document.getElementById("n-energia").textContent = `${r.intervalos} de ${r.intervalos_esperados} intervalos de 15 min`;
+  document.getElementById("k-producao").innerHTML = valorUnid(r.producao_t, 1, "t");
+  document.getElementById("n-producao").textContent = r.origens_producao.length ? `origem: ${r.origens_producao.join(", ")}` : "sem lançamento de produção no período";
+  document.getElementById("k-especifico").innerHTML = valorUnid(r.especifico, 2, r.unidade_especifico);
+  document.getElementById("k-demanda").innerHTML = valorUnid(r.demanda_max_kw, 1, "kW");
+  document.getElementById("n-demanda").textContent = r.demanda_max_em ? `em ${SGE.dataHora(r.demanda_max_em)}` : "";
+
+  const azul = SGE.cor("--series-1"), verde = SGE.cor("--ok"), txt = SGE.cor("--text-secondary"), grid = SGE.cor("--grid");
+  const dias = r.dias;
+  if (gDias) gDias.destroy();
+  gDias = new Chart(document.getElementById("g-dias"), {
+    data: { labels: dias.map(d => diaCurto(d.dia)), datasets: [
+      { type: "bar", label: `Energia (${r.unidade})`, data: dias.map(d => d.energia), backgroundColor: azul, borderRadius: 3, yAxisID: "y", order: 2 },
+      { type: "line", label: `Consumo específico (${r.unidade_especifico})`, data: dias.map(d => d.especifico), borderColor: verde, backgroundColor: verde,
+        pointRadius: 2, borderWidth: 2, tension: 0.2, yAxisID: "y2", order: 1 },
+    ] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { labels: { color: txt, boxWidth: 12 } }, tooltip: { callbacks: {
+        title: c => `${diaSemana(dias[c[0].dataIndex].dia)} ${diaCurto(dias[c[0].dataIndex].dia)}`,
+        label: c => c.datasetIndex === 0 ? `Energia: ${SGE.num(c.parsed.y, 0)} ${r.unidade}` : `Consumo específico: ${SGE.num(c.parsed.y, 2)} ${r.unidade_especifico}`,
+        afterBody: c => `Ração: ${SGE.num(dias[c[0].dataIndex].producao_t, 1)} t` } } },
+      scales: {
+        x: { ticks: { color: txt, maxRotation: 0, autoSkipPadding: 12 }, grid: { display: false } },
+        y: { position: "left", beginAtZero: true, ticks: { color: txt }, grid: { color: grid }, title: { display: true, text: r.unidade, color: txt } },
+        y2: { position: "right", beginAtZero: true, ticks: { color: txt }, grid: { display: false }, title: { display: true, text: r.unidade_especifico, color: txt } },
+      } },
+  });
+
+  const perfil = r.perfil, vermelho = SGE.cor("--critico");
+  const naPonta = h => h >= "18:00" && h < "21:00";
+  if (gPerfil) gPerfil.destroy();
+  gPerfil = new Chart(document.getElementById("g-perfil"), {
+    type: "bar",
+    data: { labels: perfil.map(p => p.hora), datasets: [{ label: "Demanda média (kW)", data: perfil.map(p => p.kw),
+      backgroundColor: perfil.map(p => naPonta(p.hora) ? vermelho : azul), barPercentage: 1, categoryPercentage: 0.9 }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: c => `${c[0].label}${naPonta(c[0].label) ? " (ponta)" : ""}`, label: c => `${SGE.num(c.parsed.y, 1)} kW médio` } } },
+      scales: {
+        x: { ticks: { color: txt, maxRotation: 0, callback: (v, i) => perfil[i] && perfil[i].hora.endsWith(":00") && +perfil[i].hora.slice(0, 2) % 3 === 0 ? perfil[i].hora.slice(0, 2) + "h" : "" }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { color: txt }, grid: { color: grid }, title: { display: true, text: "kW", color: txt } },
+      } },
+    plugins: [faixaPonta],
+  });
+
+  document.getElementById("tabela").innerHTML = dias.slice().reverse().map(d => `<tr>
+      <td>${diaSemana(d.dia)} ${diaCurto(d.dia)}</td><td class="num">${SGE.num(d.energia, 0)}</td><td class="num">${SGE.num(d.producao_t, 1)}</td>
+      <td class="num">${SGE.num(d.especifico, 2)}</td><td class="num">${d.intervalos}</td></tr>`).join("")
+    || '<tr><td colspan="5" class="vazio">Sem dados no período.</td></tr>';
+  document.getElementById("rodape").innerHTML = `<tr><th>Total</th><th class="num" style="text-align:right">${SGE.num(r.energia, 0)}</th>
+    <th style="text-align:right">${SGE.num(r.producao_t, 1)}</th><th style="text-align:right">${SGE.num(r.especifico, 2)}</th><th style="text-align:right">${r.intervalos}</th></tr>`;
+}
+
+(async () => {
+  const linhas = await SGE.get("/api/linhas");
+  elLinha.innerHTML = linhas.map(l => `<option value="${l.nome}">${l.nome}</option>`).join("");
+  if (!linhas.length) { document.getElementById("selos").innerHTML = '<span class="selo aviso">Nenhuma linha configurada (hierarquia.yaml)</span>'; return; }
+  elPer.onchange = () => { document.querySelectorAll(".pers").forEach(e => e.hidden = elPer.value !== "personalizado"); carregar(); };
+  elLinha.onchange = elIni.onchange = elFim.onchange = document.getElementById("atualizar").onclick = carregar;
+  await carregar();
+  setInterval(carregar, 60000);
+})();
+</script>
+{% endblock %}

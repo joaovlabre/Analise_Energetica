@@ -4,24 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SGE Agronorte · {{ titulo }}</title>
-<link rel="stylesheet" href="/static/sge.css">
+<link rel="stylesheet" href="/static/sge.css?v=2">
 <script src="/static/chart.umd.min.js"></script>
-<script src="/static/sge.js"></script>
+<script src="/static/sge.js?v=2"></script>
 </head>
 <body>
-<header class="topo">
-  <div class="marca">SGE <span>Agronorte · Nutrição Animal</span></div>
-  <nav>
-    <a href="/" class="{{ 'ativo' if titulo == 'Painel' }}">Painel</a>
-    <a href="/tendencias" class="{{ 'ativo' if titulo == 'Tendências' }}">Tendências</a>
-    <a href="/energia" class="{{ 'ativo' if titulo == 'Energia 15 min' }}">Energia 15 min</a>
-    <a href="/comunicacao" class="{{ 'ativo' if titulo == 'Comunicação' }}">Comunicação</a>
-  </nav>
-  <div id="relogio" class="relogio"></div>
+<header class="barra">
+  <div class="marca">SGE <span>Agronorte · Gestão de Energia</span></div>
+  <div class="barra-direita">
+    <div class="alarmes" title="Alarmes ativos por severidade">
+      <span class="alarme alta" id="al-alta">0</span>
+      <span class="alarme media" id="al-media">0</span>
+      <span class="alarme baixa" id="al-baixa">0</span>
+    </div>
+    <div id="relogio" class="relogio"></div>
+    <div class="usuario" id="usuario">local</div>
+  </div>
 </header>
+<nav class="menu">
+  <a href="/paineis" class="{{ 'ativo' if menu == 'paineis' }}">Painéis</a>
+  <a href="/diagramas" class="{{ 'ativo' if menu == 'diagramas' }}">Diagramas</a>
+  <a href="/tendencias" class="{{ 'ativo' if menu == 'tendencias' }}">Tendências</a>
+  <a href="/alarmes" class="{{ 'ativo' if menu == 'alarmes' }}">Alarmes</a>
+  <a href="/energia" class="{{ 'ativo' if menu == 'relatorios' }}">Relatórios</a>
+  <a href="/comunicacao" class="{{ 'ativo' if menu == 'comunicacao' }}">Comunicação</a>
+</nav>
+{% if menu == 'paineis' and painel %}
+<div class="subtitulo"><a href="/paineis">Painéis</a> › {{ painel.nome }}</div>
+{% endif %}
 <main>
 {% block conteudo %}{% endblock %}
 </main>
-<script>setInterval(() => { document.getElementById('relogio').textContent = new Date().toLocaleString('pt-BR', {timeZone: 'America/Araguaina'}); }, 1000);</script>
+<script>
+setInterval(() => { document.getElementById('relogio').textContent = new Date().toLocaleString('pt-BR', {timeZone: 'America/Araguaina'}); }, 1000);
+async function atualizarBarra() {
+  try {
+    const a = await SGE.get('/api/alarmes/resumo');
+    for (const k of ['alta', 'media', 'baixa']) {
+      const el = document.getElementById('al-' + k); el.textContent = a[k]; el.classList.toggle('zero', !a[k]);
+    }
+  } catch (e) { console.error(e); }
+}
+atualizarBarra(); setInterval(atualizarBarra, 30000);
+SGE.get('/api/usuario').then(u => document.getElementById('usuario').textContent = u.nome).catch(() => {});
+</script>
 </body>
 </html>

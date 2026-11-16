@@ -84,6 +84,30 @@ class Agregacao(BaseModel):
     periodo_execucao_s: float = 60.0
 
 
+class MedidorLinha(BaseModel):
+    """Medidor que alimenta uma linha. `fator` é a parcela do consumo atribuída à linha (1 = exclusivo)."""
+
+    dispositivo: str
+    grandeza: str = "energia_ativa_importada"
+    fator: float = Field(default=1.0, gt=0, le=1)
+
+
+class Linha(BaseModel):
+    nome: str
+    descricao: str | None = None
+    eletricidade: list[MedidorLinha] = Field(default_factory=list)
+
+
+class Hierarquia(BaseModel):
+    linhas: list[Linha] = Field(default_factory=list)
+
+    def linha(self, nome: str) -> Linha:
+        for l in self.linhas:
+            if l.nome == nome:
+                return l
+        raise KeyError(f"linha '{nome}' não está na hierarquia")
+
+
 class Banco(BaseModel):
     url: str = "sqlite:///dados/sge.db"
 
@@ -100,6 +124,7 @@ class Config(BaseModel):
     agregacao: Agregacao = Field(default_factory=Agregacao)
     barramentos: list[Barramento]
     dispositivos: list[Dispositivo]
+    hierarquia: str | None = None  # caminho do hierarquia.yaml (linhas -> medidores)
 
     @model_validator(mode="after")
     def _checar(self):
@@ -145,4 +170,24 @@ def carregar_config(caminho: str | Path, raiz: str | Path | None = None) -> Conf
         p = Path(d.mapa)
         if not p.is_absolute():
             d.mapa = str((raiz / p).resolve())
+    if cfg.hierarquia and not Path(cfg.hierarquia).is_absolute():
+        cfg.hierarquia = str((raiz / cfg.hierarquia).resolve())
     return cfg
+
+
+def carregar_hierarquia(cfg: Config) -> Hierarquia:
+    """Lê o hierarquia.yaml indicado na configuração e confere se os medidores existem."""
+    if not cfg.hierarquia:
+        return Hierarquia()
+    with Path(cfg.hierarquia).open(encoding="utf-8") as f:
+        h = Hierarquia.model_validate(yaml.safe_load(f) or {})
+    nomes = {d.nome for d in cfg.dispositivos}
+    vistos: set[str] = set()
+    for l in h.linhas:
+        if l.nome in vistos:
+            raise ValueError(f"hierarquia: linha '{l.nome}' duplicada")
+        vistos.add(l.nome)
+        for m in l.eletricidade:
+            if m.dispositivo not in nomes:
+                raise ValueError(f"hierarquia: linha '{l.nome}' usa o medidor '{m.dispositivo}', que não está em dispositivos")
+    return h

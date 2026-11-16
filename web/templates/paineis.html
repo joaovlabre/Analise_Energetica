@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="lista-paineis">
+  {% for p in paineis %}
+  <a class="cartao painel-link" href="/paineis/{{ p.slug }}">
+    <h2>{{ p.nome }}</h2>
+    <p>{{ p.descricao }}</p>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

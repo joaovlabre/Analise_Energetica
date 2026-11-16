@@ -18,8 +18,8 @@ O servidor fala Modbus TCP com o gateway; cada medidor é endereçado pelo seu I
 |---|---|
 | `coletor/` | mapa CSV → pontos, decodificador (4 word orders, INT64, FP 4Q), blocos, transporte **somente leitura**, serviço de coleta |
 | `armazenamento/` | esquema SQLAlchemy, gravação (histórico só com INSERT), agregação de 15 min |
-| `calculo/` | consumo por totalizador: reset, rollover, lacuna (funções puras) |
-| `api/`, `web/` | API FastAPI e telas: Painel, Tendências, Energia 15 min, Comunicação |
+| `calculo/` | consumo por totalizador: reset, rollover, lacuna; KPIs de consumo específico (funções puras) |
+| `api/`, `web/` | API FastAPI e telas: Painéis (Visão geral, Consumo por linha), Tendências, Relatórios (Energia 15 min), Comunicação |
 | `ferramentas/` | `varrer_serial` (descobrir quais IDs respondem, via gateway TCP ou porta COM) e `validar_campo` (Excel para conferir com o display) |
 | `tests/` | `unit/`, `integracao/` e `simulador/` (escravos Modbus TCP com injeção de falhas) |
 | `config/` | `mapas/*.csv`, `dispositivos.simulador.yaml`, `dispositivos.exemplo.yaml`; `local/` fica fora do git |
@@ -46,6 +46,18 @@ python -m venv .venv
 Opções do simulador: `--acelerar N` (totalizadores N vezes mais rápidos), `--queda INICIO:DURACAO` (gateway inteiro sem responder),
 `--queda-medidor ID:INICIO:DURACAO` (só um medidor fora; o gateway responde exceção 0B), `--sem-gateway`,
 `--reset T` (zera os totalizadores no instante T), `--estrito` (exceção 02 em endereço não mapeado), `--quadro rtu_over_tcp`.
+
+### Consumo específico por linha (dados simulados)
+
+A relação linha → medidores fica em `config/hierarquia.simulador.yaml` (indicada em `hierarquia:` no YAML de dispositivos).
+Para gerar um mês simulado (3 turnos todos os dias, demanda reduzida na ponta das 18h às 21h):
+```powershell
+.venv\Scripts\python -m ferramentas.simular_producao --config config\dispositivos.simulador.yaml --linha "Linha 1" --toneladas 3780 --mes 2026-10
+```
+A ferramenta só aceita bancos com `simulador` no nome. Ela grava leituras do totalizador a cada minuto e calcula
+`energia_intervalo` a partir delas (flag `simulado`), além da produção diária em `producao` (origem `simulado`).
+Para ver o resultado, abra **Painéis › Consumo por linha** (http://127.0.0.1:8000/paineis/consumo-linha). A tela mostra
+energia, ração produzida, kWh/t, demanda máxima, a série diária e o perfil médio de demanda por horário.
 
 ## Fluxo principal (campo)
 

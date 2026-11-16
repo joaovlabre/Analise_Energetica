@@ -107,7 +107,7 @@ Módulos:
 - Propriedades do vapor: `iapws`
 - Banco: **SQLite** no protótipo (`dados/*.db`), migração prevista para **MS SQL Server**. Acesso só via SQLAlchemy 2 Core (`armazenamento/esquema.py`), sem SQL ou tipos exclusivos do SQLite. Datas em UTC ingênuo.
 - API: **FastAPI** (`api/app.py`)
-- Interface: **web própria** (Jinja2 + JS puro + Chart.js local em `web/static`, sem CDN: a planta pode ficar sem internet)
+- Interface: **web própria** (Jinja2 + JS puro + Chart.js local em `web/static`, sem CDN: a planta pode ficar sem internet). Shell no estilo PME (barra verde, menu Painéis | Diagramas | Tendências | Alarmes | Relatórios | Comunicação). Por enquanto, painéis, diagramas e tabelas são **montados em código** (lista `PAINEIS` em `api/app.py`); a edição pelo usuário fica para depois. Sem bibliotecas JS novas: grade e editor de diagramas serão próprios.
 - Relatórios: **[A DEFINIR]** PDF; Excel com openpyxl (já usado na validação de campo)
 - Simulador: servidor Modbus próprio em asyncio (`tests/simulador/servidor.py`), não o servidor do pymodbus (API em transição para a v4)
 - Testes: `pytest` + simulador Modbus (`pymodbus` server) com dados sintéticos
@@ -207,7 +207,9 @@ python -m coletor --config config/dispositivos.simulador.yaml --debug   # TX/RX 
 python -m api --config config/dispositivos.simulador.yaml
 python -m ferramentas.varrer_serial --listar | --porta COM3 --mapa config/mapas/weg_mmw02.csv
 python -m ferramentas.validar_campo --config <yaml> --dispositivo <nome>   # Excel para conferir com o display
+python -m ferramentas.simular_producao --config config/dispositivos.simulador.yaml --linha "Linha 1" --toneladas 3780 --mes 2026-10
 ```
+`simular_producao` só grava em banco com `simulador` no nome; tudo o que ela gera é marcado (`flag`/`origem` = `simulado`).
 `config/local/` (fora do git) guarda a configuração real; o modelo é `config/dispositivos.exemplo.yaml`.
 
 ## 11. Fluxo de trabalho com o Claude
@@ -224,7 +226,7 @@ python -m ferramentas.validar_campo --config <yaml> --dispositivo <nome>   # Exc
 2. Tela de tempo real e tendências
 3. Hierarquia, medidores virtuais e energia por intervalo de 15 min
 4. Tarifas, custos e rateio elétrico
-5. Integração do dado de produção (CLP/balança/ERP) e KPIs de consumo específico
+5. Integração do dado de produção (CLP/balança/ERP) e KPIs de consumo específico. **Feito:** hierarquia linha → medidores (`hierarquia:` no YAML), painel "Consumo por linha" (kWh, t, kWh/t, perfil de demanda) com dados simulados. **Falta:** origem real da produção e gás/vapor por linha
 6. Vapor, gás e biomassa: medidores, lançamento manual, conversões e custo do vapor em cascata
 7. Ar comprimido e água
 8. Relatórios agendados (diário, mensal) e alarmes

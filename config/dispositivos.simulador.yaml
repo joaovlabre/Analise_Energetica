@@ -2,6 +2,8 @@
 banco:
   url: sqlite:///dados/sge_simulador.db
 
+hierarquia: config/hierarquia.simulador.yaml   # linhas de produção -> medidores
+
 api:
   host: 127.0.0.1
   porta: 8000

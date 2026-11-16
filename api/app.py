@@ -1,11 +1,11 @@
 """API (FastAPI) e telas web. Somente leitura do banco."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import and_, select
@@ -13,7 +13,9 @@ from sqlalchemy.engine import Engine
 
 from armazenamento import esquema as E
 from armazenamento.esquema import criar_engine, criar_tabelas
-from comum.config import Config
+from api import consumo_linha
+from comum.config import Config, carregar_hierarquia
+from comum.periodo import TIPOS as TIPOS_PERIODO, resolver_periodo
 from comum.tempo import agora_utc, para_local
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -34,6 +36,14 @@ DESTAQUES = [
 ]
 
 
+# Painéis montados em código (fase atual: sem edição pelo usuário)
+PAINEIS = [
+    dict(slug="visao-geral", nome="Visão geral", descricao="Valores em tempo real de cada medidor", template="painel.html"),
+    dict(slug="consumo-linha", nome="Consumo por linha",
+         descricao="Energia, ração produzida e consumo específico (kWh/t) por linha de produção", template="consumo_linha.html"),
+]
+
+
 def _iso(dt: datetime | None) -> str | None:
     return para_local(dt).isoformat(timespec="seconds") if dt else None
 
@@ -41,8 +51,9 @@ def _iso(dt: datetime | None) -> str | None:
 def criar_app(cfg: Config, engine: Engine | None = None) -> FastAPI:
     engine = engine or criar_engine(cfg.banco.url)
     criar_tabelas(engine)
-    app = FastAPI(title="SGE Agronorte — Gestão de Energia", version="0.1.0")
+    app = FastAPI(title="SGE Agronorte — Gestão de Energia", version="0.2.0")
     app.state.engine = engine
+    hierarquia = carregar_hierarquia(cfg)
     app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")
     templates = Jinja2Templates(directory=WEB / "templates")
 
@@ -138,24 +149,70 @@ def criar_app(cfg: Config, engine: Engine | None = None) -> FastAPI:
             for l in linhas
         ]
 
-    # ------------------------------------------------------------------ telas
-    def _pagina(nome: str, request: Request, titulo: str):
-        return templates.TemplateResponse(request, nome, {"titulo": titulo})
+    @app.get("/api/linhas")
+    def linhas():
+        return [dict(nome=l.nome, descricao=l.descricao, medidores=[m.dispositivo for m in l.eletricidade]) for l in hierarquia.linhas]
 
-    @app.get("/", response_class=HTMLResponse)
-    def painel(request: Request):
-        return _pagina("painel.html", request, "Painel")
+    @app.get("/api/consumo_especifico")
+    def consumo_especifico(linha: str, periodo: str = "mes_anterior", inicio: date | None = None, fim: date | None = None):
+        try:
+            lin = hierarquia.linha(linha)
+        except KeyError as e:
+            raise HTTPException(404, str(e.args[0]))
+        if periodo not in TIPOS_PERIODO:
+            raise HTTPException(422, f"período desconhecido: {periodo}")
+        agora = agora_utc()
+        try:
+            ini, f = resolver_periodo(periodo, agora, inicio, fim)
+        except ValueError as e:
+            raise HTTPException(422, str(e))
+        return consumo_linha.consultar(engine, cfg, lin, ini, f, agora)
+
+    @app.get("/api/alarmes/resumo")
+    def alarmes_resumo():
+        return {"alta": 0, "media": 0, "baixa": 0}  # módulo de alarmes ainda não existe
+
+    @app.get("/api/usuario")
+    def usuario():
+        return {"nome": "local", "perfil": "admin"}  # sem login por enquanto
+
+    # ------------------------------------------------------------------ telas
+    def _pagina(nome: str, request: Request, titulo: str, menu: str, **extra):
+        return templates.TemplateResponse(request, nome, {"titulo": titulo, "menu": menu, "paineis": PAINEIS, **extra})
+
+    @app.get("/")
+    def raiz():
+        return RedirectResponse("/paineis")
+
+    @app.get("/paineis", response_class=HTMLResponse)
+    def tela_paineis(request: Request):
+        return _pagina("paineis.html", request, "Painéis", "paineis")
+
+    @app.get("/paineis/{slug}", response_class=HTMLResponse)
+    def tela_painel(request: Request, slug: str):
+        p = next((p for p in PAINEIS if p["slug"] == slug), None)
+        if p is None:
+            raise HTTPException(404, "painel não encontrado")
+        return _pagina(p["template"], request, p["nome"], "paineis", painel=p)
 
     @app.get("/tendencias", response_class=HTMLResponse)
     def tela_tendencias(request: Request):
-        return _pagina("tendencias.html", request, "Tendências")
+        return _pagina("tendencias.html", request, "Tendências", "tendencias")
 
     @app.get("/energia", response_class=HTMLResponse)
     def tela_energia(request: Request):
-        return _pagina("energia.html", request, "Energia 15 min")
+        return _pagina("energia.html", request, "Energia 15 min", "relatorios")
 
     @app.get("/comunicacao", response_class=HTMLResponse)
     def tela_comunicacao(request: Request):
-        return _pagina("comunicacao.html", request, "Comunicação")
+        return _pagina("comunicacao.html", request, "Comunicação", "comunicacao")
+
+    @app.get("/diagramas", response_class=HTMLResponse)
+    def tela_diagramas(request: Request):
+        return _pagina("em_breve.html", request, "Diagramas", "diagramas", texto="Os diagramas unifilares entram na próxima fase.")
+
+    @app.get("/alarmes", response_class=HTMLResponse)
+    def tela_alarmes(request: Request):
+        return _pagina("em_breve.html", request, "Alarmes", "alarmes", texto="O módulo de alarmes ainda não foi implementado.")
 
     return app
