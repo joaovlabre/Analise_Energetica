@@ -59,6 +59,14 @@ A ferramenta só aceita bancos com `simulador` no nome. Ela grava leituras do to
 Para ver o resultado, abra **Painéis › Consumo por linha** (http://127.0.0.1:8000/paineis/consumo-linha). A tela mostra
 energia, ração produzida, kWh/t, demanda máxima, a série diária e o perfil médio de demanda por horário.
 
+### Diagramas unifilares
+
+Os diagramas são montados em configuração: cada arquivo listado em `diagramas:` no YAML de dispositivos descreve a barra, os
+transformadores e o medidor ligado a cada um, indicado pelo nome. Exemplo: `config/diagramas/unifilar_geral.simulador.yaml`, que tem a
+barra de 13,8 kV, 6 trafos, o EM3261 no TR-01 de 500 kVA e o MMW02 no TR-02 de 1 MVA. Potências e tensões desconhecidas ficam
+vazias e aparecem como "a definir". A tela **Diagramas** mostra a potência ativa ao vivo em W, lida em lote por
+`POST /api/ao_vivo` a cada 2 s, e indica se o medidor está online, sem comunicação ou com qualidade diferente de ok.
+
 ## Fluxo principal (campo)
 
 1. Configure o gateway (IP fixo, modo Modbus TCP ou transparente, baud e paridade iguais aos dos medidores).

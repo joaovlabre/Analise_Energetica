@@ -125,6 +125,7 @@ class Config(BaseModel):
     barramentos: list[Barramento]
     dispositivos: list[Dispositivo]
     hierarquia: str | None = None  # caminho do hierarquia.yaml (linhas -> medidores)
+    diagramas: list[str] = Field(default_factory=list)  # arquivos YAML de diagramas unifilares
 
     @model_validator(mode="after")
     def _checar(self):
@@ -172,6 +173,7 @@ def carregar_config(caminho: str | Path, raiz: str | Path | None = None) -> Conf
             d.mapa = str((raiz / p).resolve())
     if cfg.hierarquia and not Path(cfg.hierarquia).is_absolute():
         cfg.hierarquia = str((raiz / cfg.hierarquia).resolve())
+    cfg.diagramas = [d if Path(d).is_absolute() else str((raiz / d).resolve()) for d in cfg.diagramas]
     return cfg
 
 

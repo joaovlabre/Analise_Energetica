@@ -3,6 +3,8 @@ banco:
   url: sqlite:///dados/sge_simulador.db
 
 hierarquia: config/hierarquia.simulador.yaml   # linhas de produção -> medidores
+diagramas:                                     # unifilares exibidos em Diagramas
+  - config/diagramas/unifilar_geral.simulador.yaml
 
 api:
   host: 127.0.0.1

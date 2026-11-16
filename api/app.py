@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -15,6 +15,7 @@ from armazenamento import esquema as E
 from armazenamento.esquema import criar_engine, criar_tabelas
 from api import consumo_linha
 from comum.config import Config, carregar_hierarquia
+from comum.diagramas import carregar_diagramas
 from comum.periodo import TIPOS as TIPOS_PERIODO, resolver_periodo
 from comum.tempo import agora_utc, para_local
 
@@ -54,6 +55,7 @@ def criar_app(cfg: Config, engine: Engine | None = None) -> FastAPI:
     app = FastAPI(title="SGE Agronorte — Gestão de Energia", version="0.2.0")
     app.state.engine = engine
     hierarquia = carregar_hierarquia(cfg)
+    diagramas = {d.slug: d for d in carregar_diagramas(cfg)}
     app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")
     templates = Jinja2Templates(directory=WEB / "templates")
 
@@ -168,6 +170,43 @@ def criar_app(cfg: Config, engine: Engine | None = None) -> FastAPI:
             raise HTTPException(422, str(e))
         return consumo_linha.consultar(engine, cfg, lin, ini, f, agora)
 
+    @app.get("/api/diagramas")
+    def lista_diagramas():
+        return [dict(slug=d.slug, nome=d.nome, descricao=d.descricao) for d in diagramas.values()]
+
+    @app.get("/api/diagramas/{slug}")
+    def diagrama(slug: str):
+        d = diagramas.get(slug)
+        if d is None:
+            raise HTTPException(404, "diagrama não encontrado")
+        with engine.connect() as con:
+            ids = dict(con.execute(select(E.dispositivo.c.nome, E.dispositivo.c.id)).all())
+        dados = d.model_dump()
+        for t in dados["transformadores"]:
+            if t["medidor"]:
+                t["medidor"]["dispositivo_id"] = ids.get(t["medidor"]["dispositivo"])
+        return dados
+
+    @app.post("/api/ao_vivo")
+    def ao_vivo(itens: list[dict] = Body(..., embed=True)):
+        """Valores atuais de vários dispositivos numa chamada: itens = [{dispositivo_id, grandezas: [...]}]."""
+        V, S = E.valor_atual, E.estado_comunicacao
+        saida = {}
+        with engine.connect() as con:
+            for it in itens[:200]:
+                disp_id = it.get("dispositivo_id")
+                grandezas = [str(g) for g in it.get("grandezas", [])][:50]
+                if not isinstance(disp_id, int):
+                    continue
+                est = con.execute(select(S.c.online, S.c.ts_ultima_ok_utc).where(S.c.dispositivo_id == disp_id)).first()
+                linhas = con.execute(select(V).where(V.c.dispositivo_id == disp_id, V.c.grandeza.in_(grandezas))).mappings().all() if grandezas else []
+                saida[str(disp_id)] = dict(
+                    online=est.online if est else None,
+                    ultima_ok=_iso(est.ts_ultima_ok_utc) if est else None,
+                    valores={l["grandeza"]: dict(valor=l["valor"], unidade=l["unidade"], qualidade=l["qualidade"], ts=_iso(l["ts_utc"])) for l in linhas},
+                )
+        return saida
+
     @app.get("/api/alarmes/resumo")
     def alarmes_resumo():
         return {"alta": 0, "media": 0, "baixa": 0}  # módulo de alarmes ainda não existe
@@ -209,7 +248,14 @@ def criar_app(cfg: Config, engine: Engine | None = None) -> FastAPI:
 
     @app.get("/diagramas", response_class=HTMLResponse)
     def tela_diagramas(request: Request):
-        return _pagina("em_breve.html", request, "Diagramas", "diagramas", texto="Os diagramas unifilares entram na próxima fase.")
+        return _pagina("diagramas.html", request, "Diagramas", "diagramas", diagramas=list(diagramas.values()))
+
+    @app.get("/diagramas/{slug}", response_class=HTMLResponse)
+    def tela_diagrama(request: Request, slug: str):
+        d = diagramas.get(slug)
+        if d is None:
+            raise HTTPException(404, "diagrama não encontrado")
+        return _pagina("diagrama.html", request, d.nome, "diagramas", diagrama=d)
 
     @app.get("/alarmes", response_class=HTMLResponse)
     def tela_alarmes(request: Request):

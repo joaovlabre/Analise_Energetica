@@ -1,0 +1,38 @@
+# Unifilar geral (FLUXO DE TESTES). Valores desconhecidos ficam vazios e aparecem como "a definir".
+slug: unifilar-geral
+nome: Unifilar geral 13,8 kV
+descricao: Barra geral de 13,8 kV com os transformadores da planta
+entrada: Entrada 13,8 kV
+barra:
+  nome: Barra geral 13,8 kV
+  tensao_kv: 13.8
+transformadores:
+  - nome: TR-01
+    potencia_kva: 500
+    tensao_primaria_kv: 13.8
+    tensao_secundaria_kv: 0.38
+    medidor:
+      dispositivo: SIM_SCH_EM3261
+      icone: schneider_em3261
+      grandeza: potencia_ativa_total
+      unidade_exibicao: W
+      posicao_valor: display      # valor no visor do ícone
+  - nome: TR-02
+    potencia_kva: 1000
+    tensao_primaria_kv: 13.8
+    tensao_secundaria_kv: 0.38
+    medidor:
+      dispositivo: SIM_WEG_MMW02
+      icone: weg_mmw02
+      grandeza: potencia_ativa_total
+      unidade_exibicao: W
+      posicao_valor: lateral      # valor ao lado do ícone
+  # potência e tensão secundária ainda a definir
+  - nome: TR-03
+    tensao_primaria_kv: 13.8
+  - nome: TR-04
+    tensao_primaria_kv: 13.8
+  - nome: TR-05
+    tensao_primaria_kv: 13.8
+  - nome: TR-06
+    tensao_primaria_kv: 13.8

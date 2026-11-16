@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="subtitulo-pagina"><a href="/diagramas">Diagramas</a> › {{ diagrama.nome }}</div>
+<div class="cartao diagrama">
+  <svg id="unifilar" class="unifilar" role="img" aria-label="{{ diagrama.nome }}"></svg>
+  <div class="legenda">
+    <span class="selo ok">Online</span>
+    <span class="selo falha">Sem comunicação</span>
+    <span class="selo aviso">Qualidade diferente de ok</span>
+    <span class="nota">Valores atualizados a cada 2 s</span>
+  </div>
+</div>
+<style>main { max-width: none; }</style>
+<script src="/static/diagrama.js?v=2"></script>
+<script>iniciarDiagrama(document.getElementById("unifilar"), {{ diagrama.slug | tojson }});</script>
+{% endblock %}

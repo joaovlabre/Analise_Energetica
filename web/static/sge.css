@@ -101,3 +101,33 @@ details summary { cursor: pointer; color: var(--text-secondary); margin-top: 8px
 .grade-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 16px; }
 .grafico.medio { height: 320px; }
 [hidden] { display: none !important; }
+
+/* ---------- diagramas ---------- */
+.subtitulo-pagina { color: var(--text-secondary); margin-bottom: 12px; }
+.subtitulo-pagina a { color: var(--text-secondary); }
+.diagrama { overflow-x: auto; }
+.unifilar { width: 100%; min-width: 1100px; height: auto; display: block; font-family: "Segoe UI", system-ui, sans-serif; }
+.unifilar .barra-mt { stroke: var(--text-primary); stroke-width: 7; stroke-linecap: round; }
+.unifilar .linha-mt, .unifilar .linha-bt { stroke: var(--text-primary); stroke-width: 2; }
+.unifilar .no { fill: var(--text-primary); }
+.unifilar .enrolamento { fill: var(--surface-1); stroke: var(--text-primary); stroke-width: 2; }
+.unifilar .tc { fill: none; stroke: var(--text-primary); stroke-width: 1.5; }
+.unifilar .ligacao-medicao { stroke: var(--text-secondary); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.unifilar .rotulo { fill: var(--text-secondary); font-size: 12px; }
+.unifilar .rotulo.forte { fill: var(--text-primary); font-weight: 600; font-size: 13px; }
+.unifilar .rotulo.pequeno { font-size: 10.5px; }
+.unifilar .rotulo.indefinido { fill: var(--text-muted); font-style: italic; }
+.unifilar .moldura { fill: none; stroke: transparent; stroke-width: 3; }
+.unifilar .medidor.online .moldura { stroke: var(--ok); }
+.unifilar .medidor.offline .moldura { stroke: var(--text-muted); stroke-dasharray: 5 4; }
+.unifilar .medidor.offline > g { opacity: 0.45; }
+.unifilar .medidor.offline .led { fill: #9aa0a4; }
+.unifilar .medidor.qualidade-ruim .moldura { stroke: var(--aviso); }
+.unifilar .estado { fill: var(--text-muted); font-size: 10px; }
+.unifilar .medidor.offline .estado { fill: var(--critico); }
+.unifilar .caixa-valor { fill: var(--surface-0); stroke: var(--borda); }
+.unifilar .medidor.online .caixa-valor { stroke: var(--ok); }
+.unifilar .valor-lateral { fill: var(--text-primary); font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.unifilar .medidor.qualidade-ruim .valor-lateral { fill: var(--aviso); }
+.legenda { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.legenda .nota { color: var(--text-muted); font-size: 12px; }

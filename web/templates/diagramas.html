@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="lista-paineis">
+  {% for d in diagramas %}
+  <a class="cartao painel-link" href="/diagramas/{{ d.slug }}">
+    <h2>{{ d.nome }}</h2>
+    <p>{{ d.descricao or "" }}</p>
+  </a>
+  {% else %}
+  <div class="cartao"><div class="vazio">Nenhum diagrama configurado (campo <code>diagramas:</code> do YAML).</div></div>
+  {% endfor %}
+</div>
+{% endblock %}
