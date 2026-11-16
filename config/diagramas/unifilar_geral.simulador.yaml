@@ -1,6 +1,7 @@
 # Unifilar geral (FLUXO DE TESTES). Padrão: a grandeza do medidor aparece em número ao lado do ícone;
 # clicar no ícone abre todas as medições do aparelho.
-# Valores desconhecidos ficam vazios e aparecem como "a definir".
+# Dados dos transformadores: tabela "Dados dos Transformadores" da planta (prints_ref/trafos.png).
+# corrente_nominal_primaria_a = In informada na tabela (lado de 13,8 kV).
 slug: unifilar-geral
 nome: Unifilar geral 13,8 kV
 descricao: Barra geral de 13,8 kV com os transformadores da planta
@@ -10,29 +11,52 @@ barra:
   tensao_kv: 13.8
 transformadores:
   - nome: TR-01
+    potencia_kva: 75
+    tensao_primaria_kv: 13.8
+    tensao_secundaria_kv: 0.38
+    tensao_secundaria_fn_kv: 0.22
+    impedancia_pct: 4.88
+    ligacao: Dyn1
+    corrente_nominal_primaria_a: 3.14
+  - nome: TR-02
+    potencia_kva: 112.5
+    tensao_primaria_kv: 13.8
+    tensao_secundaria_kv: 0.38
+    tensao_secundaria_fn_kv: 0.22
+    impedancia_pct: 5.49
+    ligacao: Dyn1
+    corrente_nominal_primaria_a: 4.71
+  - nome: TR-03
     potencia_kva: 500
     tensao_primaria_kv: 13.8
     tensao_secundaria_kv: 0.38
+    tensao_secundaria_fn_kv: 0.22
+    impedancia_pct: 4.65
+    ligacao: Dyn1
+    corrente_nominal_primaria_a: 20.92
     medidor:
       dispositivo: SIM_SCH_EM3261
       icone: schneider_em3261
       grandeza: potencia_ativa_total
       unidade_exibicao: W
-  - nome: TR-02
+  - nome: TR-04
     potencia_kva: 1000
     tensao_primaria_kv: 13.8
     tensao_secundaria_kv: 0.38
+    tensao_secundaria_fn_kv: 0.22
+    impedancia_pct: 5.44
+    ligacao: Dyn1
+    corrente_nominal_primaria_a: 41.84
     medidor:
       dispositivo: SIM_WEG_MMW02
       icone: weg_mmw02
       grandeza: potencia_ativa_total
       unidade_exibicao: W
-  # potência e tensão secundária ainda a definir
-  - nome: TR-03
-    tensao_primaria_kv: 13.8
-  - nome: TR-04
-    tensao_primaria_kv: 13.8
   - nome: TR-05
+    potencia_kva: 1000
     tensao_primaria_kv: 13.8
-  - nome: TR-06
-    tensao_primaria_kv: 13.8
+    tensao_secundaria_kv: 0.38
+    tensao_secundaria_fn_kv: 0.22
+    impedancia_pct: 4.83
+    ligacao: Dyn1
+    corrente_nominal_primaria_a: 41.84

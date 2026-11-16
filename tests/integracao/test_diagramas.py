@@ -39,11 +39,12 @@ def test_unifilar_geral(cliente):
     c, ids, cfg = cliente
     assert [d["slug"] for d in c.get("/api/diagramas").json()] == ["unifilar-geral"]
     d = c.get("/api/diagramas/unifilar-geral").json()
-    assert d["barra"]["tensao_kv"] == 13.8 and len(d["transformadores"]) == 6
+    assert d["barra"]["tensao_kv"] == 13.8 and len(d["transformadores"]) == 5
     tr = {t["nome"]: t for t in d["transformadores"]}
-    assert tr["TR-01"]["potencia_kva"] == 500 and tr["TR-01"]["medidor"]["dispositivo_id"] == ids["SIM_SCH_EM3261"]
-    assert tr["TR-02"]["potencia_kva"] == 1000 and tr["TR-02"]["medidor"]["dispositivo_id"] == ids["SIM_WEG_MMW02"]
-    assert tr["TR-03"]["potencia_kva"] is None and tr["TR-03"]["medidor"] is None  # a definir, nada inventado
+    assert [t["potencia_kva"] for t in d["transformadores"]] == [75, 112.5, 500, 1000, 1000]  # tabela da planta
+    assert tr["TR-03"]["medidor"]["dispositivo_id"] == ids["SIM_SCH_EM3261"] and tr["TR-03"]["impedancia_pct"] == 4.65
+    assert tr["TR-04"]["medidor"]["dispositivo_id"] == ids["SIM_WEG_MMW02"] and tr["TR-04"]["impedancia_pct"] == 5.44
+    assert tr["TR-05"]["medidor"] is None and tr["TR-05"]["ligacao"] == "Dyn1"
     assert c.get("/api/diagramas/nao-existe").status_code == 404
     for pagina in ("/diagramas", "/diagramas/unifilar-geral"):
         r = c.get(pagina)

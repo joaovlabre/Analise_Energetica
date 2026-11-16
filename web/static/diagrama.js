@@ -93,11 +93,18 @@ function desenharUnifilar(svg, d) {
     g.appendChild(el("path", { d: `M ${cx - 6} 322 L ${cx} 334 L ${cx + 6} 322`, class: "linha-bt", fill: "none" }));
     // rótulos
     const xr = cx + 34;
-    g.appendChild(texto(xr, 200, t.nome, { class: "rotulo forte" }));
-    g.appendChild(texto(xr, 216, t.potencia_kva ? `${kv(t.potencia_kva)} kVA` : "potência a definir", { class: t.potencia_kva ? "rotulo" : "rotulo indefinido" }));
-    const tp = kv(t.tensao_primaria_kv), ts = kv(t.tensao_secundaria_kv);
-    g.appendChild(texto(xr, 232, `${tp ?? "?"}/${ts ?? "?"} kV`, { class: ts ? "rotulo" : "rotulo indefinido" }));
-    if (ts) g.appendChild(texto(cx + 10, 318, `${ts} kV`, { class: "rotulo pequeno" }));
+    const volts = v => v === null || v === undefined ? null : (v < 1 ? `${Math.round(v * 1000)}` : kv(v));
+    const tp = kv(t.tensao_primaria_kv);
+    const sec = t.tensao_secundaria_kv ? `${volts(t.tensao_secundaria_kv)}${t.tensao_secundaria_fn_kv ? "/" + volts(t.tensao_secundaria_fn_kv) : ""} ${t.tensao_secundaria_kv < 1 ? "V" : "kV"}` : null;
+    const linhas = [
+      [t.nome, "rotulo forte"],
+      [t.potencia_kva ? `${kv(t.potencia_kva)} kVA` : "potência a definir", t.potencia_kva ? "rotulo" : "rotulo indefinido"],
+      [`${tp ? tp + " kV" : "?"} / ${sec ?? "?"}`, sec ? "rotulo" : "rotulo indefinido"],
+      [[t.ligacao, t.impedancia_pct ? `Z ${kv(t.impedancia_pct)}%` : null].filter(Boolean).join(" · "), "rotulo pequeno"],
+      [t.corrente_nominal_primaria_a ? `In ${kv(t.corrente_nominal_primaria_a)} A (13,8 kV)` : "", "rotulo pequeno"],
+    ];
+    linhas.forEach(([txt, cls], i) => txt && g.appendChild(texto(xr, 196 + i * 15, txt, { class: cls })));
+    if (sec) g.appendChild(texto(cx + 10, 318, sec, { class: "rotulo pequeno" }));
 
     if (t.medidor) {
       const m = t.medidor;

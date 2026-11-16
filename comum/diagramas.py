@@ -25,7 +25,11 @@ class Transformador(BaseModel):
     nome: str
     potencia_kva: float | None = None
     tensao_primaria_kv: float | None = None
-    tensao_secundaria_kv: float | None = None
+    tensao_secundaria_kv: float | None = None  # entre fases
+    tensao_secundaria_fn_kv: float | None = None  # fase-neutro
+    impedancia_pct: float | None = None
+    ligacao: str | None = None  # grupo de ligação (ex.: Dyn1)
+    corrente_nominal_primaria_a: float | None = None
     medidor: MedidorDiagrama | None = None
 
 

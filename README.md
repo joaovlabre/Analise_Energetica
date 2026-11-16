@@ -63,8 +63,8 @@ energia, ração produzida, kWh/t, demanda máxima, a série diária e o perfil 
 
 Os diagramas são montados em configuração: cada arquivo listado em `diagramas:` no YAML de dispositivos descreve a barra, os
 transformadores e o medidor ligado a cada um, indicado pelo nome. Exemplo: `config/diagramas/unifilar_geral.simulador.yaml`, que tem a
-barra de 13,8 kV, 6 trafos, o EM3261 no TR-01 de 500 kVA e o MMW02 no TR-02 de 1 MVA. Potências e tensões desconhecidas ficam
-vazias e aparecem como "a definir". A tela **Diagramas** mostra a potência ativa ao vivo em W, lida em lote por
+barra de 13,8 kV e os 5 trafos da planta (75; 112,5; 500; 1000 e 1000 kVA, 13,8 kV / 380-220 V, Dyn1, com impedância e In),
+com o EM3261 no TR-03 (500 kVA) e o MMW02 no TR-04 (1000 kVA). Dados desconhecidos ficam vazios e aparecem como "a definir". A tela **Diagramas** mostra a potência ativa ao vivo em W, lida em lote por
 `POST /api/ao_vivo` a cada 2 s, e indica se o medidor está online, sem comunicação ou com qualidade diferente de ok. O valor aparece sempre em número ao lado do ícone, e clicar no medidor abre a **tela do medidor** no estilo do PME (`web/static/medidor.js`), com as abas Tensões/Correntes (diagrama trifásico), Qualidade de energia, Energia e demanda (quadrantes, demanda e totalizadores), Limites e Configuração/Diagnóstico. A mesma tela abre pelo botão "Abrir tela do medidor" em Painéis › Visão geral. Grandezas que o medidor não fornece aparecem como "—".
 
 ## Fluxo principal (campo)
