@@ -69,7 +69,7 @@ com o EM3261 no TR-03 (500 kVA) e o MMW02 no TR-04 (1000 kVA). Dados desconhecid
 
 ## Fluxo principal (campo)
 
-1. Configure o gateway (IP fixo, modo Modbus TCP ou transparente, baud e paridade iguais aos dos medidores).
+1. Configure o gateway **USR-DR302** pela página web dele: modo "Modbus RTU to Modbus TCP", servidor TCP na porta 502, IP fixo (DHCP desligado) e baud/paridade iguais aos dos medidores. Na RS-485: ligação em série com terminação de 120 Ω nas duas pontas e par trançado blindado.
 2. Copie `config/dispositivos.exemplo.yaml` para `config/local/dispositivos.yaml` e preencha o IP do gateway e o ID e o mapa de cada medidor.
 3. Teste a rede e descubra quais IDs respondem através do gateway:
    ```powershell
@@ -90,7 +90,7 @@ O coletor e as ferramentas de campo usam só funções Modbus de leitura (FC 01�
 
 ## Pendências de campo
 
-- **Gateway:** modelo, IP, modo (Modbus TCP ou transparente) e número máximo de conexões TCP simultâneas.
+- **Gateway USR-DR302:** definir o IP fixo e conferir no manual as opções de paridade e o timeout de resposta do modo Modbus (deve ser maior que o tempo de resposta dos medidores e menor que o `timeout_s` do SGE). O DR302 não informa isolação galvânica: avaliar isolador/protetor de surto na RS-485.
 - **WEG MMW02:** conferir o parâmetro "Formato" (Short/Long). Os totalizadores de 64 bits (reg 12008…) têm escala `A_VERIFICAR` e ficam fora da coleta até serem comparados com o reg 304.
 - **Schneider EM3261:** confirmar a interface RS-485. Conferir a decodificação do FP de 4 quadrantes (`FLOAT32_4Q_PF`) contra a aba "Data Types" da Schneider.
 - Baud rate e paridade da rede RS-485 (configurados no gateway e nos medidores) e o ID Modbus de cada medidor.

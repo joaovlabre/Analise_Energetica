@@ -59,11 +59,12 @@ Usuários: engenharia elétrica/manutenção (técnico), utilidades/caldeira, pr
 
 ### Arquitetura de comunicação (decidida)
 ```
-[medidores em série na rede RS-485] -> [gateway RS485/TCP] -> [switch] -> [servidor (coletor)]
+[medidores em série na rede RS-485] -> [gateway RS485/TCP USR-DR302] -> [switch] -> [servidor (coletor)]
 ```
 - O servidor fala **Modbus TCP** com o gateway: barramento `tcp` (gateway convertendo TCP <-> RTU) ou `rtu_over_tcp` (gateway transparente). Um barramento por gateway; o `endereco_modbus` de cada medidor é o ID dele na rede RS-485 (Unit ID).
+- **Gateway escolhido: PUSR USR-DR302** (trilho DIN, 1× RS-485, 1× Ethernet, 5–36 VCC, até 8 clientes TCP). Usar o modo **"Modbus RTU to Modbus TCP"** (barramento `tcp`), servidor TCP na porta 502, IP fixo (desligar DHCP). Não usar o modo transparente: com mais de um cliente conectado ele repassa a resposta RTU a todos, e o RTU não tem número de transação.
 - Baud, paridade e bits do lado serial são configurados **no gateway** e iguais em todos os medidores da rede.
-- O coletor mantém **uma conexão TCP por gateway** e faz um pedido por vez (a rede RS-485 é half-duplex). Ferramentas como `validar_campo` abrem outra conexão: confirmar quantas conexões simultâneas o gateway aceita.
+- O coletor mantém **uma conexão TCP por gateway** e faz um pedido por vez (a rede RS-485 é half-duplex). Ferramentas como `validar_campo` abrem outra conexão (o DR302 aceita até 8).
 - Exceções **0A/0B** (gateway sem caminho / medidor não respondeu) e **05/06** (ocupado) contam como **falha de comunicação** do medidor, nunca como ponto inválido. Gateway inteiro fora = todos os medidores dele sem comunicação.
 - O conversor USB-RS485 (barramento `serial`) fica só como alternativa de bancada.
 

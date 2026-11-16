@@ -38,10 +38,12 @@ barramentos:
   # Um barramento por gateway. Baud rate, paridade e bits do lado serial são configurados
   # NO GATEWAY (e iguais em todos os medidores da rede), não aqui.
   # O coletor mantém UMA conexão TCP por gateway e faz um pedido por vez (a rede RS-485 é half-duplex).
+  # Gateway escolhido: PUSR USR-DR302, modo "Modbus RTU to Modbus TCP", servidor TCP na porta 502, IP fixo.
+  # Não usar o modo transparente (rtu_over_tcp) com mais de um cliente conectado.
   - nome: gateway_01
-    tipo: tcp                          # gateway convertendo Modbus TCP <-> RTU (modo "Modbus gateway")
+    tipo: tcp                          # USR-DR302 em modo "Modbus RTU to Modbus TCP"
                                        # use rtu_over_tcp se o gateway estiver em modo transparente (repassa o quadro RTU)
-    host: 192.168.0.50                 # [A CONFIRMAR] IP fixo do gateway
+    host: 192.168.0.50                 # [A CONFIRMAR] IP fixo do USR-DR302
     porta_tcp: 502                     # [A CONFIRMAR]
     timeout_s: 1.5                     # gateway + RS-485 somam latência; ajustar após medir em campo
     retentativas: 1
