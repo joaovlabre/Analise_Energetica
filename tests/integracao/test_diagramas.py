@@ -68,3 +68,12 @@ def test_diagrama_com_medidor_desconhecido_e_recusado(cliente, tmp_path):
     cfg.diagramas = [str(arq)]
     with pytest.raises(ValueError):
         carregar_diagramas(cfg)
+
+
+def test_detalhe_do_medidor(cliente):
+    c, ids, _ = cliente
+    d = c.get(f"/api/dispositivos/{ids['SIM_SCH_EM3261']}/detalhe").json()
+    assert d["nome"] == "SIM_SCH_EM3261" and d["mapa"] == "schneider_gologic_em3261.csv"
+    assert d["barramento"]["tipo"] == "tcp" and d["estado"]["online"] is True
+    assert "tensao_" in d["faixas"] and d["demanda_calculada"] == {}
+    assert c.get("/api/dispositivos/999/detalhe").status_code == 404

@@ -95,6 +95,37 @@ def criar_app(cfg: Config, engine: Engine | None = None) -> FastAPI:
         ]
         return {"dispositivo_id": dispositivo_id, "destaques": DESTAQUES, "valores": valores}
 
+    @app.get("/api/dispositivos/{dispositivo_id}/detalhe")
+    def detalhe_dispositivo(dispositivo_id: int):
+        """Configuração, comunicação e diagnóstico do medidor (aba Configuração/Diagnóstico e Limites)."""
+        D, S, EI = E.dispositivo, E.estado_comunicacao, E.energia_intervalo
+        with engine.connect() as con:
+            d = con.execute(select(D).where(D.c.id == dispositivo_id)).mappings().first()
+            if d is None:
+                raise HTTPException(404, "dispositivo não encontrado")
+            s = con.execute(select(S).where(S.c.dispositivo_id == dispositivo_id)).mappings().first()
+            demanda = {}
+            for g in ("energia_ativa_importada", "energia_reativa_importada"):
+                u = con.execute(select(EI.c.ts_inicio_utc, EI.c.consumo, EI.c.unidade, EI.c.qualidade, EI.c.intervalo_min).where(
+                    EI.c.dispositivo_id == dispositivo_id, EI.c.grandeza == g).order_by(EI.c.ts_inicio_utc.desc()).limit(1)).first()
+                if u:
+                    demanda[g] = dict(inicio=_iso(u.ts_inicio_utc), valor=u.consumo * 60 / u.intervalo_min,
+                                      unidade={"kWh": "kW", "kvarh": "kvar"}.get(u.unidade, u.unidade + "/h"), qualidade=u.qualidade)
+        cfg_disp = next((x for x in cfg.dispositivos if x.nome == d["nome"]), None)
+        bar = cfg.barramento(cfg_disp.barramento) if cfg_disp else None
+        return dict(
+            id=d["id"], nome=d["nome"], modelo=d["modelo"], local=d["local"], origem=d["origem"], ativo=d["ativo"],
+            endereco_modbus=d["endereco_modbus"], mapa=Path(d["mapa"]).name if d["mapa"] else None,
+            grupos=cfg_disp.grupos if cfg_disp else [],
+            barramento=dict(nome=bar.nome, tipo=bar.tipo, host=bar.host, porta_tcp=bar.porta_tcp, porta=bar.porta, baudrate=bar.baudrate,
+                            paridade=bar.paridade, timeout_s=bar.timeout_s, retentativas=bar.retentativas) if bar else None,
+            faixas={k: dict(minimo=f.minimo, maximo=f.maximo) for k, f in cfg.coleta.faixas.items()},
+            estado=dict(online=s["online"], ultima_ok=_iso(s["ts_ultima_ok_utc"]), atualizado=_iso(s["ts_atualizacao_utc"]),
+                        pedidos_ok=s["pedidos_ok"], pedidos_falha=s["pedidos_falha"], ultimo_erro=s["ultimo_erro"]) if s else None,
+            demanda_calculada=demanda,
+            hora_servidor=_iso(agora_utc()),
+        )
+
     @app.get("/api/grandezas")
     def grandezas(dispositivo_id: int):
         L = E.leitura

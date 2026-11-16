@@ -2,7 +2,8 @@
 {% block conteudo %}
 <div id="dispositivos" class="dispositivos"></div>
 <div class="cartao">
-  <h2 id="titulo-disp">—</h2>
+  <div style="display:flex;align-items:center;gap:12px"><h2 id="titulo-disp" style="margin:0">—</h2>
+    <button id="abrir-pme" style="margin-left:auto">Abrir tela do medidor</button></div>
   <div id="estado" style="margin-bottom:12px"></div>
   <div id="tiles" class="tiles"></div>
 </div>
@@ -46,6 +47,7 @@ async function atualizar() {
         <td>${v.unidade}</td><td class="${v.qualidade === 'ok' ? 'qual-ok' : 'qual-ruim'}">${v.qualidade}</td><td>${SGE.dataHora(v.ts)}</td></tr>`).join("");
   } catch (e) { console.error(e); }
 }
+document.getElementById("abrir-pme").onclick = () => atual !== null && MED.abrir(atual);
 atualizar();
 setInterval(atualizar, 2000);
 </script>

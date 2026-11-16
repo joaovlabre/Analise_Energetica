@@ -6,7 +6,24 @@ const SGE = {
     corrente_media: "Corrente média", frequencia: "Frequência", energia_ativa_importada: "Energia ativa (totalizador)",
     energia_reativa_importada: "Energia reativa (totalizador)",
   },
-  rotulo(g) { return SGE.ROTULOS[g] || g; },
+  // Nome legível de uma grandeza canônica (ex.: tensao_ab -> "Tensão AB", fp_a_4q -> "Fator de potência A (4Q)")
+  rotulo(g) {
+    if (SGE.ROTULOS[g]) return SGE.ROTULOS[g];
+    const PALAVRAS = { tensao: "Tensão", corrente: "Corrente", potencia: "Potência", ativa: "ativa", reativa: "reativa", aparente: "aparente",
+      fp: "Fator de potência", energia: "Energia", demanda: "Demanda", thd: "THD", desequilibrio: "Desequilíbrio", carregamento: "Carregamento",
+      importada: "importada", exportada: "exportada", liquida: "líquida", bruta: "bruta", prevista: "prevista", ultima: "último intervalo",
+      pico: "pico", media: "média", medio: "médio", total: "total", max: "máx.", ff: "F-F", fn: "F-N", zeravel: "(zerável)", float: "(float)",
+      caracteristica: "característica", tp: "TP", tc: "TC", primario: "primário", secundario: "secundário", numero: "Número", serie: "de série",
+      falhas: "Falhas", alimentacao: "de alimentação", tempo: "Tempo", operacao: "de operação", horas: "Horas", carga: "carga",
+      permanente: "permanente", frequencia: "Frequência", timestamp: "Relógio", medidor: "do medidor", exp: "exp.", imp: "imp.",
+      indutiva: "indutiva", capacitiva: "capacitiva", q1: "Q1", q2: "Q2", "4q": "(4Q)", "64": "(64 bits)" };
+    const FASES = { a: "A", b: "B", c: "C", n: "N", ab: "AB", bc: "BC", ca: "CA", an: "AN", bn: "BN", cn: "CN" };
+    return g.split("_").map((p, i) => {
+      if (FASES[p]) return FASES[p];
+      const w = PALAVRAS[p] || p;
+      return i > 0 && /^[A-ZÀ-Ú][a-zà-ú]/.test(w) ? w[0].toLowerCase() + w.slice(1) : w;  // só a 1ª palavra maiúscula
+    }).join(" ");
+  },
   async get(url) {
     const r = await fetch(url);
     if (!r.ok) throw new Error(`${r.status} ${url}`);

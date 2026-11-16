@@ -156,39 +156,9 @@ function atualizarMedidores(medidores, vivo) {
   }
 }
 
-// ---------------------------------------------------------------- janela de medições do medidor
-let detalheTimer = null;
-
-async function abrirDetalhe(m) {
-  const dlg = document.getElementById("detalhe");
-  if (!dlg || !m.dispositivo_id) return;
-  dlg.querySelector(".det-titulo").textContent = m.dispositivo;
-  dlg.querySelector(".det-estado").innerHTML = "";
-  dlg.querySelector(".det-tiles").innerHTML = '<div class="vazio">Carregando…</div>';
-  dlg.querySelector(".det-tabela").innerHTML = "";
-  if (!dlg.open) dlg.showModal();
-  clearInterval(detalheTimer);
-  await preencherDetalhe(dlg, m.dispositivo_id);
-  detalheTimer = setInterval(() => dlg.open ? preencherDetalhe(dlg, m.dispositivo_id) : clearInterval(detalheTimer), 2000);
-}
-
-async function preencherDetalhe(dlg, id) {
-  try {
-    const [lista, r] = await Promise.all([SGE.get("/api/dispositivos"), SGE.get(`/api/dispositivos/${id}/atual`)]);
-    const d = lista.find(x => x.id === id) || {};
-    dlg.querySelector(".det-titulo").textContent = `${d.nome || ""} · ${d.modelo || ""}${d.local ? " · " + d.local : ""}`;
-    dlg.querySelector(".det-estado").innerHTML = `${SGE.selo(d.online)} <span class="det-nota">última leitura ok: ${SGE.dataHora(d.ultima_ok)}${d.ultimo_erro ? " · " + d.ultimo_erro : ""}</span>`;
-    const porNome = Object.fromEntries(r.valores.map(v => [v.grandeza, v]));
-    dlg.querySelector(".det-tiles").innerHTML = r.destaques.filter(g => porNome[g]).map(g => {
-      const v = porNome[g], ruim = v.qualidade !== "ok";
-      return `<div class="tile"><div class="rotulo">${SGE.rotulo(g)}</div>
-        <div class="valor ${ruim ? "qual-ruim" : ""}" title="qualidade: ${v.qualidade}">${SGE.num(v.valor, SGE.casas(v.unidade, g))}<span class="unid">${v.unidade}</span></div>
-        ${ruim ? `<div class="selo aviso">${v.qualidade}</div>` : ""}</div>`;
-    }).join("") || '<div class="vazio">Sem leituras ainda.</div>';
-    dlg.querySelector(".det-tabela").innerHTML = r.valores.map(v => `<tr>
-        <td>${v.grupo}</td><td>${SGE.rotulo(v.grandeza)}</td><td class="num">${SGE.num(v.valor, SGE.casas(v.unidade, v.grandeza))}</td>
-        <td>${v.unidade}</td><td class="${v.qualidade === "ok" ? "qual-ok" : "qual-ruim"}">${v.qualidade}</td><td>${SGE.dataHora(v.ts)}</td></tr>`).join("");
-  } catch (e) { console.error(e); }
+// ---------------------------------------------------------------- tela do medidor (web/static/medidor.js)
+function abrirDetalhe(m) {
+  if (m.dispositivo_id) MED.abrir(m.dispositivo_id);
 }
 
 async function iniciarDiagrama(svg, slug) {
