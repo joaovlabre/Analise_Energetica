@@ -13,23 +13,6 @@
   --aviso: #9a6700;
   --critico: #c62828;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --surface-0: #111110;
-    --surface-1: #1a1a19;
-    --borda: #33332f;
-    --text-primary: #f0efec;
-    --text-secondary: #c3c2b7;
-    --text-muted: #8f8e86;
-    --series-1: #00a651;
-    --series-2: #5cc98a;
-    --grid: #2a2a27;
-    --ok: #4ac26b;
-    --aviso: #d4a72c;
-    --critico: #f47067;
-  }
-}
 * { box-sizing: border-box; }
 body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--surface-0); color: var(--text-primary); font-size: 14px; }
 
@@ -71,7 +54,6 @@ details summary { cursor: pointer; color: var(--text-secondary); margin-top: 8px
 /* ---------- shell ---------- */
 /* cores da logo Agronorte: verde escuro #016F45, verde claro #00A651, branco */
 :root { --marca: #016f45; --marca-clara: #00a651; --marca-texto: #ffffff; --ponta: rgba(198, 40, 40, 0.08); }
-@media (prefers-color-scheme: dark) { :root { --ponta: rgba(244, 112, 103, 0.10); } }
 .barra { display: flex; align-items: center; gap: 18px; padding: 8px 20px; background: #ffffff; color: var(--marca); border-bottom: 3px solid var(--marca-clara); color-scheme: light; }
 .barra .logo { height: 34px; display: block; }
 .barra .sistema { border-left: 2px solid #dfe8e3; padding-left: 16px; line-height: 1.15; }
