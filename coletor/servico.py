@@ -131,7 +131,7 @@ class ColetorDispositivo:
                     continue
                 bruto = decodificar(regs, p.tipo, p.word_order)
                 valor = aplicar_escala(bruto, p.escala)
-                valor, qual = Q.avaliar(p.grandeza, valor, self.cfg.coleta.faixas)
+                valor, qual = Q.avaliar(p.grandeza, valor, self.cfg.coleta.faixas, p.grupo)
                 if log.isEnabledFor(logging.DEBUG):
                     log.debug("%s %-32s regs=%s bruto=%r -> %r %s [%s]", self.cfg_disp.nome, p.grandeza,
                               " ".join(f"{r:04X}" for r in regs), bruto, valor, p.unidade, qual)

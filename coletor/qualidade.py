@@ -18,9 +18,17 @@ def faixa_para(grandeza: str, faixas: dict[str, Faixa]) -> Faixa | None:
     return faixas[max(candidatos, key=len)] if candidatos else None
 
 
-def avaliar(grandeza: str, valor: float | None, faixas: dict[str, Faixa]) -> tuple[float | None, str]:
-    """Retorna (valor_para_gravar, qualidade). NaN/inf viram None com 'fora_faixa'."""
+def avaliar(grandeza: str, valor: float | None, faixas: dict[str, Faixa],
+            grupo: str | None = None) -> tuple[float | None, str]:
+    """Retorna (valor_para_gravar, qualidade). NaN/inf viram None com 'fora_faixa'.
+
+    Totalizador de energia (grupo 'energia') negativo também vira None: um acumulador nunca é
+    negativo, e o valor não pode entrar no cálculo de consumo (geraria pico falso). Ex.: o EM3261
+    sem carga devolve FFFF FFFF FFFF FFFF (INT64 = -1) nos acumuladores de energia ativa/reativa.
+    """
     if valor is None or not math.isfinite(valor):
+        return None, FORA_FAIXA
+    if grupo == "energia" and valor < 0:
         return None, FORA_FAIXA
     faixa = faixa_para(grandeza, faixas)
     if faixa and not (faixa.minimo <= valor <= faixa.maximo):
