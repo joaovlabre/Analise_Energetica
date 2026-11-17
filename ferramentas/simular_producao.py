@@ -25,9 +25,9 @@ from sqlalchemy import and_, func, insert, select
 from sqlalchemy.engine import Engine
 
 from armazenamento import esquema as E
-from armazenamento.gravador import sincronizar_dispositivos
+from armazenamento.gravador import ids_pontos, sincronizar_dispositivos
 from calculo.consumo import Amostra, calcular_incrementos, distribuir_em_intervalos
-from comum.config import Config, carregar_config, carregar_hierarquia
+from comum.config import Config, carregar_config, carregar_hierarquia, url_sem_senha
 from comum.periodo import dias_locais, meia_noite_utc
 from comum.tempo import agora_utc, para_local
 
@@ -72,7 +72,7 @@ def gerar_intervalos(inicio_utc: datetime, fim_utc: datetime, perfil: Perfil, se
 def simular(engine: Engine, cfg: Config, linha: str, toneladas: float, ano: int, mes: int,
             semente: int = 3780, totalizador_inicial: float = 500_000.0, perfil: Perfil | None = None) -> dict:
     if "simulador" not in cfg.banco.url:
-        raise ErroSimulacao(f"recusado: o banco '{cfg.banco.url}' não é do simulador (a URL precisa conter 'simulador')")
+        raise ErroSimulacao(f"recusado: o banco '{url_sem_senha(cfg.banco.url)}' não é do simulador (a URL precisa conter 'simulador')")
     hier = carregar_hierarquia(cfg)
     lin = hier.linha(linha)
     if len(lin.eletricidade) != 1:
@@ -88,8 +88,8 @@ def simular(engine: Engine, cfg: Config, linha: str, toneladas: float, ano: int,
     with engine.connect() as con:
         ja = con.execute(select(func.count()).select_from(P).where(and_(
             P.c.linha == linha, P.c.origem == "simulado", P.c.ts_inicio_utc >= inicio, P.c.ts_inicio_utc < fim))).scalar()
-        ja += con.execute(select(func.count()).select_from(L).where(and_(
-            L.c.dispositivo_id == disp_id, L.c.grandeza == med.grandeza, L.c.ts_utc >= inicio, L.c.ts_utc <= fim))).scalar()
+        ja += con.execute(select(func.count()).select_from(L.join(E.ponto, E.ponto.c.id == L.c.ponto_id)).where(and_(
+            E.ponto.c.dispositivo_id == disp_id, E.ponto.c.grandeza == med.grandeza, L.c.ts_utc >= inicio, L.c.ts_utc <= fim))).scalar()
     if ja:
         raise ErroSimulacao(f"já existem dados de {mes:02d}/{ano} para '{linha}' / {med.dispositivo}; nada foi gravado")
 
@@ -117,9 +117,9 @@ def simular(engine: Engine, cfg: Config, linha: str, toneladas: float, ano: int,
     t_dia[-1] = round(toneladas - sum(t_dia[:-1]), 2)  # fecha exatamente o total
 
     agora = agora_utc()
+    pid = ids_pontos(engine, {(disp_id, med.grandeza, "kWh")})[(disp_id, med.grandeza, "kWh")]
     with engine.begin() as con:
-        con.execute(insert(L), [dict(ts_utc=l["ts_utc"], dispositivo_id=disp_id, grandeza=med.grandeza, valor=l["valor"],
-                                     unidade="kWh", qualidade="ok") for l in leituras])
+        con.execute(insert(L), [dict(ponto_id=pid, ts_utc=l["ts_utc"], valor=l["valor"], qualidade="ok") for l in leituras])
         con.execute(insert(EI), [dict(
             ts_inicio_utc=ci.inicio, intervalo_min=cfg.agregacao.intervalo_min, dispositivo_id=disp_id, grandeza=med.grandeza,
             consumo=round(ci.consumo, 6), unidade="kWh", qualidade=ci.qualidade, flag=",".join(sorted(ci.flags | {"simulado"})),

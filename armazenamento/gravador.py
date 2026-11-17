@@ -1,10 +1,12 @@
 """Gravação no banco. Histórico: apenas INSERT."""
 from __future__ import annotations
 
+import weakref
 from datetime import datetime
 
 from sqlalchemy import delete, insert, select, update
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
+from sqlalchemy.exc import IntegrityError
 
 from armazenamento import esquema as E
 from comum.config import Config
@@ -34,11 +36,50 @@ def sincronizar_dispositivos(engine: Engine, cfg: Config) -> dict[str, int]:
     return ids
 
 
+# cache (dispositivo_id, grandeza, unidade) -> ponto.id, um por engine
+_pontos: "weakref.WeakKeyDictionary[Engine, dict[tuple[int, str, str], int]]" = weakref.WeakKeyDictionary()
+
+
+def _buscar_ponto(con: Connection, chave: tuple[int, str, str]) -> int | None:
+    P = E.ponto
+    disp, grandeza, unidade = chave
+    return con.execute(
+        select(P.c.id).where(P.c.dispositivo_id == disp, P.c.grandeza == grandeza, P.c.unidade == unidade)
+    ).scalar()
+
+
+def ids_pontos(engine: Engine, chaves: set[tuple[int, str, str]]) -> dict[tuple[int, str, str], int]:
+    """Resolve (dispositivo_id, grandeza, unidade) para ponto.id, cadastrando o ponto se for novo."""
+    cache = _pontos.setdefault(engine, {})
+    faltam = [c for c in chaves if c not in cache]
+    for chave in faltam:
+        with engine.begin() as con:
+            pid = _buscar_ponto(con, chave)
+        if pid is None:
+            try:
+                with engine.begin() as con:
+                    pid = con.execute(
+                        insert(E.ponto).values(dispositivo_id=chave[0], grandeza=chave[1], unidade=chave[2])
+                    ).inserted_primary_key[0]
+            except IntegrityError:  # outro processo cadastrou ao mesmo tempo
+                with engine.begin() as con:
+                    pid = _buscar_ponto(con, chave)
+        cache[chave] = pid
+    return {c: cache[c] for c in chaves}
+
+
 def gravar_leituras(engine: Engine, linhas: list[dict]) -> None:
     """linhas: dicts com ts_utc, dispositivo_id, grandeza, valor, unidade, qualidade."""
-    if linhas:
-        with engine.begin() as con:
-            con.execute(insert(E.leitura), linhas)
+    if not linhas:
+        return
+    ids = ids_pontos(engine, {(l["dispositivo_id"], l["grandeza"], l["unidade"]) for l in linhas})
+    registros = [
+        dict(ponto_id=ids[(l["dispositivo_id"], l["grandeza"], l["unidade"])], ts_utc=l["ts_utc"],
+             valor=l["valor"], qualidade=l["qualidade"])
+        for l in linhas
+    ]
+    with engine.begin() as con:
+        con.execute(insert(E.leitura), registros)
 
 
 def atualizar_valores_atuais(engine: Engine, dispositivo_id: int, linhas: list[dict]) -> None:

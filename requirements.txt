@@ -1,6 +1,7 @@
 pymodbus[serial]>=3.16,<4
 pyserial>=3.5
 SQLAlchemy>=2.0
+psycopg[binary]>=3.2         # PostgreSQL
 fastapi>=0.115
 uvicorn[standard]>=0.30
 jinja2>=3.1

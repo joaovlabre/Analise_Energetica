@@ -74,7 +74,12 @@ async def test_ciclo_completo_grava_valores(ambiente):
         assert c.estado.online is True
     # pontos A_VERIFICAR ficam fora; todos os utilizáveis foram lidos
     weg = coletor.dispositivos[0]
-    assert contar(engine, E.leitura, E.leitura.c.dispositivo_id == weg.dispositivo_id) == len(weg.pontos)
+    with engine.connect() as con:
+        n = con.execute(
+            select(func.count()).select_from(E.leitura.join(E.ponto, E.ponto.c.id == E.leitura.c.ponto_id))
+            .where(E.ponto.c.dispositivo_id == weg.dispositivo_id)
+        ).scalar()
+    assert n == len(weg.pontos)
     with engine.connect() as con:
         v = dict(con.execute(select(E.valor_atual.c.grandeza, E.valor_atual.c.valor).where(E.valor_atual.c.dispositivo_id == weg.dispositivo_id)).all())
     assert 200 < v["tensao_an"] < 240

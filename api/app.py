@@ -128,18 +128,19 @@ def criar_app(cfg: Config, engine: Engine | None = None) -> FastAPI:
 
     @app.get("/api/grandezas")
     def grandezas(dispositivo_id: int):
-        L = E.leitura
+        P = E.ponto
         with engine.connect() as con:
-            r = con.execute(select(L.c.grandeza).distinct().where(L.c.dispositivo_id == dispositivo_id).order_by(L.c.grandeza)).scalars().all()
+            r = con.execute(select(P.c.grandeza).distinct().where(P.c.dispositivo_id == dispositivo_id).order_by(P.c.grandeza)).scalars().all()
         return list(r)
 
     @app.get("/api/tendencia")
     def tendencia(dispositivo_id: int, grandeza: str, horas: float = Query(24, gt=0, le=24 * 92)):
-        L = E.leitura
+        L, P = E.leitura, E.ponto
         desde = agora_utc() - timedelta(hours=horas)
         q = (
-            select(L.c.ts_utc, L.c.valor, L.c.unidade, L.c.qualidade)
-            .where(and_(L.c.dispositivo_id == dispositivo_id, L.c.grandeza == grandeza, L.c.ts_utc >= desde))
+            select(L.c.ts_utc, L.c.valor, P.c.unidade, L.c.qualidade)
+            .select_from(L.join(P, P.c.id == L.c.ponto_id))
+            .where(and_(P.c.dispositivo_id == dispositivo_id, P.c.grandeza == grandeza, L.c.ts_utc >= desde))
             .order_by(L.c.ts_utc)
         )
         with engine.connect() as con:

@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import insert, select
 
 from armazenamento import esquema as E
+from armazenamento.gravador import gravar_leituras
 from armazenamento.agregacao import agregar
 from comum.config import Agregacao
 
@@ -20,15 +21,14 @@ def engine(tmp_path):
 
 
 def _gravar(engine, minutos, valor0=1000.0, inicio=T0, qualidade="ok"):
-    with engine.begin() as con:
-        con.execute(
-            insert(E.leitura),
-            [
-                dict(ts_utc=inicio + timedelta(minutes=m), dispositivo_id=1, grandeza="energia_ativa_importada",
-                     valor=valor0 + m, unidade="kWh", qualidade=qualidade)
-                for m in minutos
-            ],
-        )
+    gravar_leituras(
+        engine,
+        [
+            dict(ts_utc=inicio + timedelta(minutes=m), dispositivo_id=1, grandeza="energia_ativa_importada",
+                 valor=valor0 + m, unidade="kWh", qualidade=qualidade)
+            for m in minutos
+        ],
+    )
 
 
 def _intervalos(engine):

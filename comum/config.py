@@ -4,6 +4,8 @@ Nada de endereço, IP, porta COM ou ID fixo no código: tudo vem do YAML.
 """
 from __future__ import annotations
 
+import os
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -109,7 +111,7 @@ class Hierarquia(BaseModel):
 
 
 class Banco(BaseModel):
-    url: str = "sqlite:///dados/sge.db"
+    url: str = "sqlite:///dados/sge.db"  # aceita ${VAR}, lida do ambiente ou do .env do projeto
 
 
 class Api(BaseModel):
@@ -160,6 +162,37 @@ class Config(BaseModel):
         raise KeyError(f"dispositivo '{nome}' não está na configuração")
 
 
+def url_sem_senha(url: str) -> str:
+    """URL do banco para log e mensagens: troca a senha por ***."""
+    return re.sub(r"(://[^:/@]+:)[^@]*@", lambda m: m.group(1) + "***@", url)
+
+
+def ler_env(arquivo: Path) -> dict[str, str]:
+    """Lê um .env simples (CHAVE=valor por linha; # comenta). Sem dependência externa."""
+    if not arquivo.exists():
+        return {}
+    saida = {}
+    for linha in arquivo.read_text(encoding="utf-8").splitlines():
+        linha = linha.strip()
+        if not linha or linha.startswith("#") or "=" not in linha:
+            continue
+        chave, valor = linha.split("=", 1)
+        saida[chave.strip()] = valor.strip().strip('"').strip("'")
+    return saida
+
+
+def expandir_variaveis(texto: str, variaveis: dict[str, str]) -> str:
+    """Troca ${VAR} pelo valor do ambiente (prioridade) ou do .env. Variável ausente é erro."""
+    def troca(m: re.Match) -> str:
+        nome = m.group(1)
+        valor = os.environ.get(nome, variaveis.get(nome))
+        if valor is None:
+            raise ValueError(f"variável {nome} não definida (ambiente ou .env)")
+        return valor
+
+    return re.sub(r"\$\{(\w+)\}", troca, texto)
+
+
 def carregar_config(caminho: str | Path, raiz: str | Path | None = None) -> Config:
     """Lê o YAML. Caminhos relativos de mapa são resolvidos a partir de `raiz` (padrão: pasta do projeto)."""
     caminho = Path(caminho)
@@ -167,6 +200,7 @@ def carregar_config(caminho: str | Path, raiz: str | Path | None = None) -> Conf
         dados = yaml.safe_load(f)
     cfg = Config.model_validate(dados)
     raiz = Path(raiz) if raiz else Path(__file__).resolve().parent.parent
+    cfg.banco.url = expandir_variaveis(cfg.banco.url, ler_env(raiz / ".env"))
     for d in cfg.dispositivos:
         p = Path(d.mapa)
         if not p.is_absolute():

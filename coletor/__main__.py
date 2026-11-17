@@ -14,7 +14,7 @@ import signal
 from armazenamento.esquema import criar_engine, criar_tabelas
 from armazenamento.gravador import sincronizar_dispositivos
 from coletor.servico import Coletor
-from comum.config import carregar_config
+from comum.config import carregar_config, url_sem_senha
 from comum.log import configurar_log
 
 log = logging.getLogger("coletor")
@@ -39,7 +39,7 @@ async def rodar(caminho_config: str, duracao: float | None) -> None:
         pass  # Windows: Ctrl+C gera KeyboardInterrupt
     if duracao:
         loop.call_later(duracao, parar.set)
-    log.info("coleta iniciada (banco: %s)", cfg.banco.url)
+    log.info("coleta iniciada (banco: %s)", url_sem_senha(cfg.banco.url))
     await coletor.executar(parar)
     log.info("coleta encerrada")
 

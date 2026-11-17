@@ -1,0 +1,29 @@
+# Banco do SGE: PostgreSQL 17 + TimescaleDB.
+#   docker compose up -d        # sobe o banco (reinicia sozinho com o Docker)
+#   docker compose logs -f db   # acompanha o log
+# Credenciais em .env (fora do git; modelo em .env.exemplo).
+services:
+  db:
+    image: timescale/timescaledb:2.32.0-pg17
+    container_name: sge-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SGE_DB_NOME:-sge}
+      POSTGRES_USER: ${SGE_DB_USUARIO:-sge}
+      POSTGRES_PASSWORD: ${SGE_DB_SENHA:?defina SGE_DB_SENHA no .env}
+      TZ: UTC
+      PGTZ: UTC
+      TS_TUNE_MEMORY: 2GB          # timescaledb-tune ajusta shared_buffers etc. para este limite
+    ports:
+      - "127.0.0.1:${SGE_DB_PORTA:-5432}:5432"   # só este PC; liberar na rede exige decisão explícita
+    volumes:
+      - sge_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SGE_DB_USUARIO:-sge} -d ${SGE_DB_NOME:-sge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sge_pgdata:
+    name: sge_pgdata

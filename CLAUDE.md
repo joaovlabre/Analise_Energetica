@@ -106,7 +106,7 @@ Módulos:
 - Linguagem: Python 3.12+
 - Modbus: `pymodbus` (RTU e TCP, assíncrono)
 - Propriedades do vapor: `iapws`
-- Banco: **SQLite** no protótipo (`dados/*.db`), migração prevista para **MS SQL Server**. Acesso só via SQLAlchemy 2 Core (`armazenamento/esquema.py`), sem SQL ou tipos exclusivos do SQLite. Datas em UTC ingênuo.
+- Banco: **PostgreSQL 17 + TimescaleDB** em Docker (`docker-compose.yml`, credenciais no `.env`, modelo em `.env.exemplo`). SQLite continua nos testes e no simulador (`dados/*.db`). Acesso só via SQLAlchemy 2 Core (`armazenamento/esquema.py`); o único SQL específico é `preparar_timescale` (hypertable e compressão da `leitura`). Datas em UTC ingênuo. A `leitura` é enxuta: `(ponto_id, ts_utc, valor, qualidade)`, com dispositivo, grandeza e unidade em `ponto`; gravar sempre por `gravador.gravar_leituras`. URL do banco no YAML aceita `${VAR}` do `.env`; nunca registrar a URL sem `url_sem_senha`.
 - API: **FastAPI** (`api/app.py`)
 - Interface: **web própria**, sempre em tema claro, com as cores da logo Agronorte (verde escuro #016F45, verde claro #00A651, branco; logo em `web/static/img/logo_agronorte.png`) (Jinja2 + JS puro + Chart.js local em `web/static`, sem CDN: a planta pode ficar sem internet). Shell no estilo PME (barra verde, menu Painéis | Diagramas | Tendências | Alarmes | Relatórios | Comunicação). Por enquanto, painéis, diagramas e tabelas são **montados em código** (lista `PAINEIS` em `api/app.py`); a edição pelo usuário fica para depois. Diagramas unifilares vêm de YAML (`diagramas:` no dispositivos.yaml, modelo em `comum/diagramas.py`), desenhados em SVG por `web/static/diagrama.js`. Os ícones dos medidores são desenhos próprios, sem logotipo de fabricante. Sem bibliotecas JS novas: grade e editor de diagramas serão próprios.
 - Relatórios: **[A DEFINIR]** PDF; Excel com openpyxl (já usado na validação de campo)
@@ -197,6 +197,7 @@ Ambiente: `python -m venv .venv` e `.venv\Scripts\pip install -r requirements.tx
 
 **Fluxo principal (campo):**
 ```
+docker compose up -d                                           # banco PostgreSQL + TimescaleDB (127.0.0.1:5432)
 python -m coletor --config config/local/dispositivos.yaml     # coleta (Ctrl+C para parar)
 python -m api --config config/local/dispositivos.yaml         # telas em http://127.0.0.1:8000
 ```
@@ -210,6 +211,7 @@ python -m ferramentas.varrer_serial --listar | --porta COM3 --mapa config/mapas/
 python -m ferramentas.validar_campo --config <yaml> --dispositivo <nome>   # Excel para conferir com o display
 python -m ferramentas.simular_producao --config config/dispositivos.simulador.yaml --linha "Linha 1" --toneladas 3780 --mes 2026-10
 ```
+`python -m ferramentas.migrar_banco --origem <url> --destino <url>` copia um banco para outro vazio (ex.: SQLite antigo -> PostgreSQL), convertendo a `leitura` do formato antigo; a origem só é lida.
 `simular_producao` só grava em banco com `simulador` no nome; tudo o que ela gera é marcado (`flag`/`origem` = `simulado`).
 `config/local/` (fora do git) guarda a configuração real; o modelo é `config/dispositivos.exemplo.yaml`.
 

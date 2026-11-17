@@ -2,7 +2,9 @@
 # e preencha com os dados reais: porta COM, baud rate, paridade e ID Modbus do medidor.
 # Itens [A CONFIRMAR] precisam ser conferidos no display/parametrização do medidor.
 banco:
-  url: sqlite:///dados/sge.db          # futuro: mssql+pyodbc://... (SQL Server)
+  # PostgreSQL + TimescaleDB (docker compose up -d); usuário e senha no .env (modelo: .env.exemplo)
+  url: postgresql+psycopg://${SGE_DB_USUARIO}:${SGE_DB_SENHA}@127.0.0.1:${SGE_DB_PORTA}/${SGE_DB_NOME}
+  # url: sqlite:///dados/sge.db      # alternativa sem servidor, só para bancada
 
 api:
   host: 0.0.0.0                        # 127.0.0.1 = só este PC; 0.0.0.0 = acessível na rede

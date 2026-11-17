@@ -21,18 +21,20 @@ QUALIDADES_VALIDAS = ("ok", "fora_faixa", "estimado", "manual")
 
 
 def _amostras(con, disp_id: int, grandeza: str, desde: datetime | None) -> tuple[list[Amostra], str | None]:
-    L = E.leitura
-    base = (L.c.dispositivo_id == disp_id) & (L.c.grandeza == grandeza) & L.c.valor.is_not(None) & L.c.qualidade.in_(QUALIDADES_VALIDAS)
+    L, P = E.leitura, E.ponto
+    origem = L.join(P, P.c.id == L.c.ponto_id)
+    base = (P.c.dispositivo_id == disp_id) & (P.c.grandeza == grandeza) & L.c.valor.is_not(None) & L.c.qualidade.in_(QUALIDADES_VALIDAS)
+    colunas = (L.c.ts_utc, L.c.valor, P.c.unidade)
     linhas = []
     if desde is not None:
         anterior = con.execute(
-            select(L.c.ts_utc, L.c.valor, L.c.unidade).where(base, L.c.ts_utc <= desde).order_by(L.c.ts_utc.desc()).limit(1)
+            select(*colunas).select_from(origem).where(base, L.c.ts_utc <= desde).order_by(L.c.ts_utc.desc()).limit(1)
         ).first()
         if anterior:
             linhas.append(anterior)
-        q = select(L.c.ts_utc, L.c.valor, L.c.unidade).where(base, L.c.ts_utc > desde)
+        q = select(*colunas).select_from(origem).where(base, L.c.ts_utc > desde)
     else:
-        q = select(L.c.ts_utc, L.c.valor, L.c.unidade).where(base)
+        q = select(*colunas).select_from(origem).where(base)
     linhas.extend(con.execute(q.order_by(L.c.ts_utc)).all())
     unidade = linhas[-1].unidade if linhas else None
     return [Amostra(r.ts_utc, r.valor) for r in linhas], unidade

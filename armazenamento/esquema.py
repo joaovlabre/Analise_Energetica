@@ -1,9 +1,12 @@
-"""Esquema do banco (SQLAlchemy Core). Portável: SQLite agora, MS SQL Server depois.
+"""Esquema do banco (SQLAlchemy Core). PostgreSQL + TimescaleDB em produção; SQLite nos testes e no simulador.
 
 Regras:
 - Datas em UTC, sem fuso (DateTime ingênuo).
 - Histórico só recebe INSERT. Correções viram novos registros em `correcao`.
 - `valor_atual` é um cache do último valor lido (para a tela), não é histórico.
+- `leitura` é enxuta (ponto_id, ts, valor, qualidade): dispositivo, grandeza e unidade ficam em `ponto`.
+  No PostgreSQL com TimescaleDB ela vira hypertable comprimida (`preparar_timescale`); o restante
+  do código usa só SQLAlchemy Core portável.
 """
 from __future__ import annotations
 
@@ -17,17 +20,19 @@ from sqlalchemy import (
     Index,
     Integer,
     MetaData,
+    PrimaryKeyConstraint,
     String,
     Table,
     UniqueConstraint,
     create_engine,
     event,
+    text,
 )
 from sqlalchemy.engine import Engine
 
 metadata = MetaData()
 
-# BIGINT autoincremento no SQL Server; INTEGER PRIMARY KEY (rowid) no SQLite
+# BIGINT autoincremento no PostgreSQL; INTEGER PRIMARY KEY (rowid) no SQLite
 IdGrande = BigInteger().with_variant(Integer, "sqlite")
 
 dispositivo = Table(
@@ -44,18 +49,25 @@ dispositivo = Table(
     Column("ativo", Boolean, nullable=False, default=True),
 )
 
+ponto = Table(
+    "ponto",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("dispositivo_id", Integer, ForeignKey("dispositivo.id"), nullable=False),
+    Column("grandeza", String(60), nullable=False),
+    Column("unidade", String(12), nullable=False),  # unidade mudou no mapa = ponto novo (histórico não muda de sentido)
+    UniqueConstraint("dispositivo_id", "grandeza", "unidade", name="uq_ponto"),
+)
+
 leitura = Table(
     "leitura",
     metadata,
-    Column("id", IdGrande, primary_key=True, autoincrement=True),
+    Column("ponto_id", Integer, ForeignKey("ponto.id"), nullable=False),
     Column("ts_utc", DateTime, nullable=False),
-    Column("dispositivo_id", Integer, ForeignKey("dispositivo.id"), nullable=False),
-    Column("grandeza", String(60), nullable=False),
-    Column("valor", Float),  # NULL quando o medidor devolve NaN
-    Column("unidade", String(12), nullable=False),
+    Column("valor", Float),  # NULL quando o medidor devolve NaN / sem dado
     Column("qualidade", String(12), nullable=False),  # ok | timeout | fora_faixa | estimado | manual
+    PrimaryKeyConstraint("ponto_id", "ts_utc", name="pk_leitura"),
 )
-Index("ix_leitura_disp_grand_ts", leitura.c.dispositivo_id, leitura.c.grandeza, leitura.c.ts_utc)
 
 valor_atual = Table(
     "valor_atual",
@@ -147,7 +159,8 @@ def criar_engine(url: str) -> Engine:
         caminho = url.removeprefix("sqlite:///")
         if caminho and caminho != ":memory:":
             Path(caminho).parent.mkdir(parents=True, exist_ok=True)
-    engine = create_engine(url, future=True)
+    opcoes = {"pool_pre_ping": True} if url.startswith("postgresql") else {}
+    engine = create_engine(url, future=True, **opcoes)
     if engine.dialect.name == "sqlite":
 
         @event.listens_for(engine, "connect")
@@ -163,3 +176,32 @@ def criar_engine(url: str) -> Engine:
 
 def criar_tabelas(engine: Engine) -> None:
     metadata.create_all(engine)
+    if engine.dialect.name == "postgresql":
+        preparar_timescale(engine)
+
+
+# Parâmetros da hypertable: blocos (chunks) de 7 dias, comprimidos depois de 7 dias.
+CHUNK_LEITURA = "7 days"
+COMPRIMIR_APOS = "7 days"
+
+
+def preparar_timescale(engine: Engine) -> None:
+    """Transforma `leitura` em hypertable comprimida. Idempotente. Único SQL específico do projeto."""
+    with engine.begin() as con:
+        disponivel = con.execute(text("SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb'")).scalar()
+        if not disponivel:
+            return  # PostgreSQL sem TimescaleDB: segue como tabela comum
+        con.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb"))
+        con.execute(text(
+            "SELECT create_hypertable('leitura', 'ts_utc', "
+            f"chunk_time_interval => INTERVAL '{CHUNK_LEITURA}', if_not_exists => TRUE, migrate_data => TRUE)"
+        ))
+        comprimida = con.execute(text(
+            "SELECT compression_enabled FROM timescaledb_information.hypertables WHERE hypertable_name = 'leitura'"
+        )).scalar()
+        if not comprimida:
+            con.execute(text(
+                "ALTER TABLE leitura SET (timescaledb.compress, "
+                "timescaledb.compress_segmentby = 'ponto_id', timescaledb.compress_orderby = 'ts_utc')"
+            ))
+        con.execute(text(f"SELECT add_compression_policy('leitura', INTERVAL '{COMPRIMIR_APOS}', if_not_exists => TRUE)"))
