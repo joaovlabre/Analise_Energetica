@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitetura do SGE Agronorte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Tema claro fixo, cores da logo Agronorte. Layout: faixa verde no topo, diagrama largo, depois o fluxo do consumo e a situação dos módulos. */
+  --verde-escuro: #016F45;
+  --verde-claro: #00A651;
+  --fundo: #F5F8F6;
+  --papel: #FFFFFF;
+  --tinta: #1C2B24;
+  --tinta-suave: #5A6B62;
+  --linha: #C9D6CF;
+  --ambar: #B7791F;
+  --fonte-titulo: "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --fonte-texto: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --fonte-mono: "IBM Plex Mono", Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--fundo); color: var(--tinta); font: 15px/1.5 var(--fonte-texto); }
+header { background: var(--verde-escuro); color: #fff; padding: 18px 24px; border-bottom: 4px solid var(--verde-claro); }
+header h1 { margin: 0; font: 600 26px/1.2 var(--fonte-titulo); text-wrap: balance; }
+header p { margin: 4px 0 0; opacity: .85; max-width: 70ch; }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 28px; }
+h2 { font: 600 20px/1.2 var(--fonte-titulo); margin: 0 0 10px; color: var(--verde-escuro); }
+figure { margin: 0; background: var(--papel); border: 1px solid var(--linha); border-radius: 8px; padding: 16px; }
+.rolagem { overflow-x: auto; }
+svg { display: block; width: 100%; height: auto; min-width: 900px; }
+figcaption { margin-top: 10px; color: var(--tinta-suave); font-size: 14px; max-width: 90ch; }
+.legenda { display: flex; flex-wrap: wrap; gap: 18px; margin: 0 0 12px; font-size: 13px; color: var(--tinta-suave); }
+.legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.amostra { width: 26px; height: 14px; border-radius: 3px; background: #fff; border: 2px solid var(--verde-escuro); }
+.amostra.andamento { border-color: var(--ambar); background: #FDF6E9; }
+.amostra.plano { border: 2px dashed #8A9A92; }
+
+/* classes usadas dentro dos SVG */
+.zona { fill: none; stroke: var(--linha); stroke-width: 1.5; }
+.zona-titulo { font: 600 13px var(--fonte-titulo); fill: var(--tinta-suave); letter-spacing: .06em; text-transform: uppercase; }
+.caixa { fill: #fff; stroke: var(--verde-escuro); stroke-width: 2; }
+.caixa.andamento { fill: #FDF6E9; stroke: var(--ambar); }
+.caixa.plano { stroke: #8A9A92; stroke-dasharray: 6 4; }
+.caixa.destaque { fill: #E8F5EE; }
+.t1 { font: 600 14px var(--fonte-texto); fill: var(--tinta); }
+.t2 { font: 400 12px var(--fonte-texto); fill: var(--tinta-suave); }
+.tm { font: 400 11.5px var(--fonte-mono); fill: var(--tinta); }
+.seta { stroke: var(--tinta); stroke-width: 1.6; fill: none; }
+.seta.tracejada { stroke-dasharray: 5 4; stroke: #8A9A92; }
+.barramento { stroke: var(--verde-claro); stroke-width: 4; fill: none; }
+.rotulo { font: 500 11.5px var(--fonte-texto); fill: var(--tinta); }
+.rotulo-fundo { fill: var(--papel); }
+
+.situacao { width: 100%; border-collapse: collapse; background: var(--papel); border: 1px solid var(--linha); border-radius: 8px; overflow: hidden; }
+.situacao th, .situacao td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+.situacao th { background: #EAF1ED; font: 600 13px var(--fonte-texto); color: var(--tinta-suave); }
+.situacao tr:last-child td { border-bottom: 0; }
+.situacao code { font: 13px var(--fonte-mono); }
+.chip { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.chip.ok { background: #DDF2E6; color: var(--verde-escuro); }
+.chip.andamento { background: #FBEBCF; color: #8A5A10; }
+.chip.plano { background: #ECEFED; color: #55625B; }
+.tabela-rolagem { overflow-x: auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>SGE Agronorte: arquitetura do sistema</h1>
+  <p>Como as leituras saem dos multimedidores, passam pelo coletor e pelo banco e chegam às telas e aos indicadores de consumo. Situação em 17/11/2026.</p>
+</header>
+<main>
+
+<section>
+  <h2>Visão geral</h2>
+  <div class="legenda" aria-hidden="true">
+    <span><i class="amostra"></i>Funcionando</span>
+    <span><i class="amostra andamento"></i>Em migração</span>
+    <span><i class="amostra plano"></i>Planejado</span>
+  </div>
+  <figure>
+    <div class="rolagem">
+    <svg viewBox="0 0 1200 600" role="img" aria-label="Medidores em rede RS-485 ligados ao gateway USR-DR302, que fala Modbus TCP com o coletor no servidor; o coletor grava no banco PostgreSQL com TimescaleDB, o cálculo gera a energia de 15 minutos e a API alimenta a interface web.">
+      <defs>
+        <marker id="ponta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1C2B24"/>
+        </marker>
+        <marker id="ponta-cinza" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#8A9A92"/>
+        </marker>
+      </defs>
+
+      <!-- Zonas -->
+      <rect class="zona" x="20" y="30" width="260" height="550" rx="8"/>
+      <text class="zona-titulo" x="36" y="54">Campo</text>
+      <rect class="zona" x="296" y="30" width="178" height="550" rx="8"/>
+      <text class="zona-titulo" x="312" y="54">Rede</text>
+      <rect class="zona" x="490" y="30" width="690" height="550" rx="8"/>
+      <text class="zona-titulo" x="506" y="54">Servidor (PC da planta)</text>
+
+      <!-- Medidores -->
+      <rect class="caixa" x="36" y="78" width="206" height="58" rx="6"/>
+      <text class="t1" x="48" y="100">Schneider EM3261</text>
+      <text class="t2" x="48" y="120">TR-03 · 500 kVA · ID 2</text>
+
+      <rect class="caixa" x="36" y="150" width="206" height="58" rx="6"/>
+      <text class="t1" x="48" y="172">WEG MMW02</text>
+      <text class="t2" x="48" y="192">TR-04 · 1000 kVA</text>
+
+      <rect class="caixa plano" x="36" y="222" width="206" height="58" rx="6"/>
+      <text class="t1" x="48" y="244">Demais multimedidores</text>
+      <text class="t2" x="48" y="264">até 10 no total</text>
+
+      <rect class="caixa plano" x="36" y="294" width="206" height="72" rx="6"/>
+      <text class="t1" x="48" y="316">Gás, vapor, CLP, balança</text>
+      <text class="t2" x="48" y="336">vazão, pulsos, produção</text>
+      <text class="t2" x="48" y="354">(roadmap 5 a 7)</text>
+
+      <!-- Barramento RS-485 -->
+      <path class="barramento" d="M258 107 V330"/>
+      <path class="seta" d="M242 107 H258 M242 179 H258 M242 251 H258 M242 330 H258" style="stroke:#00A651;stroke-width:2"/>
+      <text class="rotulo" x="36" y="392">RS-485 em série</text>
+      <text class="t2" x="36" y="410">19200 baud · 8E1 · half-duplex</text>
+
+      <!-- Bancada -->
+      <rect class="caixa destaque" x="36" y="452" width="206" height="62" rx="6"/>
+      <text class="t1" x="48" y="474">Bancada (hoje)</text>
+      <text class="t2" x="48" y="494">USB-RS485 CH340 · COM4</text>
+
+      <!-- Gateway e switch -->
+      <rect class="caixa" x="310" y="170" width="150" height="88" rx="6"/>
+      <text class="t1" x="322" y="194">USR-DR302</text>
+      <text class="t2" x="322" y="214">Modbus RTU → TCP</text>
+      <text class="t2" x="322" y="232">porta 502 · IP fixo</text>
+      <text class="t2" x="322" y="249">até 8 clientes</text>
+      <path class="seta" d="M258 214 H306" marker-end="url(#ponta)"/>
+
+      <rect class="caixa" x="310" y="318" width="150" height="52" rx="6"/>
+      <text class="t1" x="322" y="341">Switch central</text>
+      <text class="t2" x="322" y="359">Ethernet</text>
+      <path class="seta" d="M385 258 V314" marker-end="url(#ponta)"/>
+
+      <!-- Switch -> coletor -->
+      <path class="seta" d="M460 344 H500 V160 H516" marker-end="url(#ponta)"/>
+      <rect class="rotulo-fundo" x="398" y="384" width="80" height="34"/>
+      <text class="rotulo" x="404" y="398">Modbus TCP</text>
+      <text class="t2" x="404" y="413">1 conexão</text>
+
+      <!-- Bancada -> coletor -->
+      <path class="seta tracejada" d="M242 483 H484 V196 H516" marker-end="url(#ponta-cinza)"/>
+      <text class="t2" x="300" y="476">Modbus RTU direto</text>
+
+      <!-- Coletor -->
+      <rect class="caixa" x="520" y="78" width="200" height="140" rx="6"/>
+      <text class="t1" x="532" y="100">Coletor</text>
+      <text class="t2" x="532" y="122">instantâneos a cada 2 s</text>
+      <text class="t2" x="532" y="140">histórico e energia 1 min</text>
+      <text class="t2" x="532" y="158">agrupa registradores</text>
+      <text class="t2" x="532" y="176">qualidade: ok, fora_faixa…</text>
+      <text class="t2" x="532" y="194">agregação de 15 min</text>
+
+      <!-- Entrada manual -->
+      <rect class="caixa plano" x="520" y="250" width="200" height="80" rx="6"/>
+      <text class="t1" x="532" y="272">Entrada manual</text>
+      <text class="t2" x="532" y="292">produção, faturas Energisa,</text>
+      <text class="t2" x="532" y="310">gás, lenha</text>
+
+      <!-- Configuração -->
+      <rect class="caixa" x="520" y="380" width="200" height="176" rx="6"/>
+      <text class="t1" x="532" y="402">Configuração</text>
+      <text class="tm" x="532" y="424">dispositivos.yaml</text>
+      <text class="tm" x="532" y="442">mapas/*.csv</text>
+      <text class="tm" x="532" y="460">hierarquia.yaml</text>
+      <text class="tm" x="532" y="478">diagramas/*.yaml</text>
+      <text class="tm" x="532" y="496">tarifas.yaml</text>
+      <text class="t2" x="532" y="520">lida pelo coletor e pela API</text>
+      <text class="t2" x="532" y="538">IPs e senhas em config/local</text>
+
+      <!-- Banco -->
+      <rect class="caixa andamento" x="770" y="78" width="200" height="252" rx="6"/>
+      <text class="t1" x="782" y="100">PostgreSQL + TimescaleDB</text>
+      <text class="t2" x="782" y="118">Docker · hoje SQLite</text>
+      <text class="tm" x="782" y="146">leitura</text>
+      <text class="t2" x="842" y="146">histórico</text>
+      <text class="tm" x="782" y="166">valor_atual</text>
+      <text class="t2" x="878" y="166">tela</text>
+      <text class="tm" x="782" y="186">energia_intervalo</text>
+      <text class="tm" x="782" y="206">producao</text>
+      <text class="tm" x="782" y="226">correcao</text>
+      <text class="tm" x="782" y="246">evento_comunicacao</text>
+      <text class="t2" x="782" y="276">só INSERT no histórico</text>
+      <text class="t2" x="782" y="294">datas em UTC</text>
+      <text class="t2" x="782" y="312">~250 mi linhas/ano</text>
+
+      <!-- Coletor / manual -> banco -->
+      <path class="seta" d="M720 140 H766" marker-end="url(#ponta)"/>
+      <text class="rotulo" x="726" y="132">grava</text>
+      <path class="seta tracejada" d="M720 290 H766" marker-end="url(#ponta-cinza)"/>
+
+      <!-- Cálculo -->
+      <rect class="caixa" x="1010" y="78" width="154" height="252" rx="6"/>
+      <text class="t1" x="1022" y="100">Cálculo</text>
+      <text class="t2" x="1022" y="122">consumo pela diferença</text>
+      <text class="t2" x="1022" y="140">do totalizador</text>
+      <text class="t2" x="1022" y="164">15 min · dia · mês</text>
+      <text class="t2" x="1022" y="188">kWh/t por linha</text>
+      <text class="t2" x="1022" y="216">tarifas e custos</text>
+      <text class="t2" x="1022" y="234">gás, vapor, biomassa</text>
+      <text class="t2" x="1022" y="252">rateio</text>
+      <text class="t2" x="1022" y="276" style="font-style:italic">os três últimos:</text>
+      <text class="t2" x="1022" y="294" style="font-style:italic">planejados</text>
+
+      <path class="seta" d="M970 150 H1006" marker-end="url(#ponta)"/>
+      <text class="rotulo" x="972" y="142">lê</text>
+      <path class="seta" d="M1006 200 H974" marker-end="url(#ponta)"/>
+      <text class="rotulo" x="976" y="218">grava</text>
+
+      <!-- API -->
+      <rect class="caixa" x="770" y="380" width="200" height="70" rx="6"/>
+      <text class="t1" x="782" y="404">API FastAPI</text>
+      <text class="t2" x="782" y="424">/api/dispositivos, /tendencia,</text>
+      <text class="t2" x="782" y="440">/energia, /comunicacao…</text>
+      <path class="seta" d="M870 330 V376" marker-end="url(#ponta)"/>
+      <text class="rotulo" x="878" y="358">consultas</text>
+      <path class="seta" d="M720 415 H766" marker-end="url(#ponta)"/>
+
+      <!-- Relatórios -->
+      <rect class="caixa plano" x="770" y="490" width="200" height="66" rx="6"/>
+      <text class="t1" x="782" y="514">Relatórios</text>
+      <text class="t2" x="782" y="534">PDF e Excel, diário e mensal</text>
+      <path class="seta tracejada" d="M870 450 V486" marker-end="url(#ponta-cinza)"/>
+
+      <!-- Interface -->
+      <rect class="caixa" x="1010" y="380" width="154" height="176" rx="6"/>
+      <text class="t1" x="1022" y="402">Interface web</text>
+      <text class="t2" x="1022" y="420">127.0.0.1:8000</text>
+      <text class="t2" x="1022" y="444">Painéis</text>
+      <text class="t2" x="1022" y="462">Diagramas (unifilar)</text>
+      <text class="t2" x="1022" y="480">Tendências</text>
+      <text class="t2" x="1022" y="498">Alarmes</text>
+      <text class="t2" x="1022" y="516">Relatórios</text>
+      <text class="t2" x="1022" y="534">Comunicação</text>
+      <path class="seta" d="M970 415 H1006" marker-end="url(#ponta)"/>
+      <text class="rotulo" x="976" y="407">JSON</text>
+    </svg>
+    </div>
+    <figcaption>Em campo, cada gateway USR-DR302 junta uma rede RS-485 de medidores e o coletor fala Modbus TCP com ele, um pedido por vez. Hoje o EM3261 está em bancada, ligado direto pela COM4. O banco está migrando de SQLite para PostgreSQL com TimescaleDB em Docker.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Como a energia de cada medidor é calculada</h2>
+  <figure>
+    <div class="rolagem">
+    <svg viewBox="0 0 1200 190" role="img" aria-label="O totalizador do medidor é lido a cada minuto; a diferença entre leituras seguidas vira incremento; os incrementos são distribuídos em intervalos de 15 minutos; dia, mês e consumo por linha são somas desses intervalos.">
+      <defs>
+        <marker id="ponta2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1C2B24"/>
+        </marker>
+      </defs>
+      <rect class="caixa" x="20" y="30" width="200" height="130" rx="6"/>
+      <text class="t1" x="32" y="54">1. Totalizador</text>
+      <text class="t2" x="32" y="78">EM3261: registrador 3304</text>
+      <text class="t2" x="32" y="96">INT64 em Wh, permanente</text>
+      <text class="t2" x="32" y="114">não zera pelo IHM</text>
+
+      <rect class="caixa" x="260" y="30" width="200" height="130" rx="6"/>
+      <text class="t1" x="272" y="54">2. Leitura 1×/min</text>
+      <text class="t2" x="272" y="78">tabela leitura, em kWh</text>
+      <text class="t2" x="272" y="96">NaN e FFFF…FFFF viram</text>
+      <text class="t2" x="272" y="114">"sem dado" (fora_faixa)</text>
+
+      <rect class="caixa" x="500" y="30" width="200" height="130" rx="6"/>
+      <text class="t1" x="512" y="54">3. Incrementos</text>
+      <text class="t2" x="512" y="78">leitura atual − anterior</text>
+      <text class="t2" x="512" y="96">reset: trecho vale zero</text>
+      <text class="t2" x="512" y="114">lacuna &gt; 5 min: estimado</text>
+      <text class="t2" x="512" y="132">nunca negativo</text>
+
+      <rect class="caixa" x="740" y="30" width="200" height="130" rx="6"/>
+      <text class="t1" x="752" y="54">4. Intervalos 15 min</text>
+      <text class="t2" x="752" y="78">:00 :15 :30 :45, como</text>
+      <text class="t2" x="752" y="96">a medição da Energisa</text>
+      <text class="t2" x="752" y="114">rateio proporcional ao tempo</text>
+      <text class="t2" x="752" y="132">nunca reescritos</text>
+
+      <rect class="caixa destaque" x="980" y="30" width="200" height="130" rx="6"/>
+      <text class="t1" x="992" y="54">5. Relatórios e KPIs</text>
+      <text class="t2" x="992" y="78">dia e mês = soma dos</text>
+      <text class="t2" x="992" y="96">intervalos de 15 min</text>
+      <text class="t2" x="992" y="114">kWh/t por linha</text>
+      <text class="t2" x="992" y="132">custos (planejado)</text>
+
+      <path class="seta" d="M220 95 H256" marker-end="url(#ponta2)"/>
+      <path class="seta" d="M460 95 H496" marker-end="url(#ponta2)"/>
+      <path class="seta" d="M700 95 H736" marker-end="url(#ponta2)"/>
+      <path class="seta" d="M940 95 H976" marker-end="url(#ponta2)"/>
+    </svg>
+    </div>
+    <figcaption>O consumo nunca vem da soma de potência (kW). Ele sai da diferença do totalizador do próprio medidor, e cada intervalo de 15 min guarda o incremento em kWh. Trocas de medidor são informadas manualmente, com a leitura acumulada.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Situação dos módulos</h2>
+  <div class="tabela-rolagem">
+  <table class="situacao">
+    <thead><tr><th>Módulo</th><th>Situação</th><th>Detalhe</th></tr></thead>
+    <tbody>
+      <tr><td>Coletor Modbus</td><td><span class="chip ok">Funcionando</span></td><td>RTU, TCP e gateway; testado com o simulador e com o EM3261 em bancada (19200 8E1, ID 2)</td></tr>
+      <tr><td>Mapas de registradores</td><td><span class="chip andamento">Validando</span></td><td>EM3261 lido sem carga; falta conferir potência, FP e energia com carga. MMW02 ainda não ligado</td></tr>
+      <tr><td>Banco de dados</td><td><span class="chip andamento">Em migração</span></td><td>SQLite hoje; PostgreSQL 17 + TimescaleDB em Docker, com <code>leitura</code> enxuta e comprimida</td></tr>
+      <tr><td>Energia de 15 min</td><td><span class="chip ok">Funcionando</span></td><td>Diferença do totalizador, lacunas marcadas como estimado</td></tr>
+      <tr><td>Telas</td><td><span class="chip ok">Funcionando</span></td><td>Painéis, unifilar 13,8 kV com 5 trafos, tela do medidor, tendências, comunicação</td></tr>
+      <tr><td>Consumo por linha (kWh/t)</td><td><span class="chip andamento">Com dado simulado</span></td><td>Falta a origem real da produção (CLP, balança ou ERP)</td></tr>
+      <tr><td>Gateway USR-DR302</td><td><span class="chip plano">Planejado</span></td><td>Falta IP fixo e IDs dos medidores em campo</td></tr>
+      <tr><td>Tarifas, custos e rateio</td><td><span class="chip plano">Planejado</span></td><td>Horários e valores do contrato Energisa a definir</td></tr>
+      <tr><td>Gás, vapor, biomassa, ar, água</td><td><span class="chip plano">Planejado</span></td><td>Medidores, conversões e custo do vapor em cascata</td></tr>
+      <tr><td>Relatórios e alarmes</td><td><span class="chip plano">Planejado</span></td><td>Diário e mensal, PDF e Excel</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+</main>
+</body>
+</html>
